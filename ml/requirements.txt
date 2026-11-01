@@ -1,0 +1,16 @@
+aiohttp==3.14.5
+hangul-romanize==0.1.0
+lightgbm==4.7.0
+numpy==2.5.4
+omfiles==1.2.0
+pandas==3.1.1
+polars==2.1.0
+pyarrow==26.0.1
+pykakasi==2.3.0
+pypinyin==0.55.0
+pyshp==3.1.8
+scikit-learn==1.9.1
+scipy==1.18.1
+shapely==2.2.0
+timezonefinder==9.2.0
+Unidecode==1.4.0
