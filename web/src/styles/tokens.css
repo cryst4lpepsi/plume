@@ -1,0 +1,76 @@
+/* Plume design tokens. OKLCH, dark only. One file; both lenses read from here. */
+:root {
+  color-scheme: dark;
+
+  /* night ink: tinted toward blue-grey, never pure black or pure grey */
+  --ink-0: oklch(0.155 0.022 255);
+  --ink-1: oklch(0.19 0.024 255);
+  --ink-2: oklch(0.235 0.027 255);
+  --ink-3: oklch(0.29 0.03 255);
+  --rule: oklch(0.33 0.03 255);
+  --rule-soft: oklch(0.255 0.026 255);
+
+  --fg: oklch(0.93 0.012 240);
+  --fg-2: oklch(0.79 0.02 245);
+  --fg-3: oklch(0.66 0.025 250);
+  --accent: oklch(0.965 0.018 225); /* the one cool off-white for interactive state */
+  --accent-ink: oklch(0.2 0.03 255);
+
+  /* PM2.5 bands in ug/m3, anchored on the WHO 2021 24 h guideline (15). Lightness falls steadily
+     from clean to dirty so the ramp survives colour-vision deficiency and greyscale. */
+  --pm-0: oklch(0.9 0.085 176);   /* 0-5      pale aurora green-teal */
+  --pm-1: oklch(0.84 0.13 166);   /* 5-15     brighter teal-green */
+  --pm-2: oklch(0.8 0.115 96);    /* 15-25    pale gold */
+  --pm-3: oklch(0.72 0.15 68);    /* 25-50    sodium amber */
+  --pm-4: oklch(0.62 0.19 40);    /* 50-75    ember */
+  --pm-5: oklch(0.5 0.2 12);      /* 75-150   crimson-magenta */
+  --pm-6: oklch(0.385 0.165 18);  /* >150     dark crimson, hatched in charts */
+
+  /* the two darkest bands fail AA as text on ink, so numerals use lifted versions of the same hues */
+  --pmt-4: oklch(0.69 0.18 42);
+  --pmt-5: oklch(0.7 0.17 10);
+  --pmt-6: oklch(0.74 0.15 355);
+
+  /* direction pair for the terminal; never drawn without an arrow or sign */
+  --rise: oklch(0.87 0.085 322);
+  --fall: oklch(0.71 0.125 236);
+
+  /* display / text / mono: chosen by the test recorded in DECISIONS.md */
+  --font-display: 'Brygada 1918 Variable', Georgia, serif;
+  --font-text: 'Golos Text Variable', 'Helvetica Neue', sans-serif;
+  --font-mono: 'Iosevka', ui-monospace, monospace;
+  --display-weight: 500;
+  --mono-stretch: 100%;
+  --mono-scale: 1.08; /* Iosevka is narrow, so it runs a step larger than the label size beside it */
+
+  /* modular scale 1.25 for globe + methods */
+  --t--1: 0.8rem;
+  --t-0: 1rem;
+  --t-1: 1.25rem;
+  --t-2: 1.563rem;
+  --t-3: 1.953rem;
+  --t-4: 2.441rem;
+  --t-5: 3.052rem;
+  /* tighter scale (1.125) for the terminal, in px so density is exact */
+  --tt-xs: 10.5px;
+  --tt-s: 11.5px;
+  --tt-m: 13px;
+  --tt-l: 14.5px;
+
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+  --s-7: 48px;
+  --s-8: 72px;
+
+  --r-1: 2px;
+  --r-2: 4px;
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-1: 150ms;
+  --dur-2: 240ms;
+  --dur-3: 400ms;
+}
