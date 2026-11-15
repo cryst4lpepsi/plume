@@ -1,0 +1,28 @@
+{
+ "script": "ml/plume/data.py",
+ "commit": "b0ea65e",
+ "europe": {
+  "stations": 420,
+  "edges": 3248,
+  "isolated_self_loop_only": 2,
+  "max_km": 300.0,
+  "k": 8,
+  "mean_in_degree": 7.733333333333333,
+  "median_edge_km": 65.01785278320312,
+  "mean_edge_km": 74.2889175415039,
+  "share_nodes_full_degree": 0.9428571428571428,
+  "median_nearest_km": 34.597225189208984
+ },
+ "asia": {
+  "stations": 423,
+  "edges": 3217,
+  "isolated_self_loop_only": 7,
+  "max_km": 500.0,
+  "k": 8,
+  "mean_in_degree": 7.6052009456264775,
+  "median_edge_km": 82.18611145019531,
+  "mean_edge_km": 109.09783935546875,
+  "share_nodes_full_degree": 0.9030732860520094,
+  "median_nearest_km": 49.600318908691406
+ }
+}

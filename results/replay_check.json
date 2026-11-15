@@ -1,0 +1,22 @@
+{
+ "script": "ml/plume/export.py",
+ "commit": "67c2702",
+ "note": "MAE over the exported replay issues only (float32 source); check_export.py recomputes these from the shipped float16 files.",
+ "replay_days": 56,
+ "issue_step_h": 6,
+ "europe": {
+  "n": 1907300,
+  "mae_plume_p50": 2.5803989933413725,
+  "mae_lightgbm": 2.6024172914591306,
+  "mae_persistence": 3.3350448277670006,
+  "coverage_p10_p90": 0.8206202485188486
+ },
+ "asia": {
+  "n": 1998377,
+  "mae_plume_p50": 4.861663239719032,
+  "mae_lightgbm": 4.890938996996062,
+  "mae_persistence": 6.168750941388937,
+  "coverage_p10_p90": 0.8126719833144597
+ },
+ "total_bytes": 44415781
+}

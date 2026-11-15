@@ -1,0 +1,24 @@
+{
+ "script": "qa/fps.cjs",
+ "commit": "5003356",
+ "viewport": [
+  1440,
+  900
+ ],
+ "window_s": 12,
+ "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+ "software_rendering": true,
+ "modes": [
+  {
+   "mode": "default",
+   "label": "Low-power rendering: off",
+   "fps": 1.22
+  },
+  {
+   "mode": "low-power",
+   "label": "Low-power rendering: on",
+   "fps": 1.49
+  }
+ ],
+ "note": "requestAnimationFrame callbacks per second with the replay paused. With a software renderer this is not representative of a machine with a GPU."
+}

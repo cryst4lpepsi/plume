@@ -1,0 +1,119 @@
+{
+ "script": "ml/tools/cvd_check.py",
+ "method": "Machado, Oliveira & Fernandes 2009, severity 1.0, applied in linear sRGB; differences are OKLab Euclidean distance (0.02 is roughly just noticeable)",
+ "normal": {
+  "ramp_lightness": [
+   0.9,
+   0.84,
+   0.8,
+   0.72,
+   0.62,
+   0.5,
+   0.392
+  ],
+  "lightness_monotonic": true,
+  "min_adjacent_step": 0.077,
+  "adjacent_steps": [
+   0.077,
+   0.147,
+   0.108,
+   0.135,
+   0.153,
+   0.119
+  ],
+  "rise_fall_distance": 0.217,
+  "rise_fall_lightness_gap": 0.16
+ },
+ "protan": {
+  "ramp_lightness": [
+   0.929,
+   0.879,
+   0.786,
+   0.672,
+   0.528,
+   0.393,
+   0.305
+  ],
+  "lightness_monotonic": true,
+  "min_adjacent_step": 0.058,
+  "adjacent_steps": [
+   0.058,
+   0.118,
+   0.116,
+   0.146,
+   0.172,
+   0.092
+  ],
+  "rise_fall_distance": 0.11,
+  "rise_fall_lightness_gap": 0.106
+ },
+ "deutan": {
+  "ramp_lightness": [
+   0.898,
+   0.839,
+   0.808,
+   0.732,
+   0.636,
+   0.515,
+   0.405
+  ],
+  "lightness_monotonic": true,
+  "min_adjacent_step": 0.063,
+  "adjacent_steps": [
+   0.063,
+   0.097,
+   0.081,
+   0.096,
+   0.142,
+   0.11
+  ],
+  "rise_fall_distance": 0.181,
+  "rise_fall_lightness_gap": 0.17
+ },
+ "tritan": {
+  "ramp_lightness": [
+   0.898,
+   0.837,
+   0.804,
+   0.726,
+   0.627,
+   0.531,
+   0.419
+  ],
+  "lightness_monotonic": true,
+  "min_adjacent_step": 0.07,
+  "adjacent_steps": [
+   0.07,
+   0.195,
+   0.121,
+   0.131,
+   0.1,
+   0.12
+  ],
+  "rise_fall_distance": 0.227,
+  "rise_fall_lightness_gap": 0.15
+ },
+ "greyscale": {
+  "ramp_lightness": [
+   0.911,
+   0.856,
+   0.801,
+   0.712,
+   0.6,
+   0.474,
+   0.372
+  ],
+  "lightness_monotonic": true,
+  "min_adjacent_step": 0.055,
+  "adjacent_steps": [
+   0.055,
+   0.055,
+   0.09,
+   0.112,
+   0.125,
+   0.102
+  ],
+  "rise_fall_distance": 0.16,
+  "rise_fall_lightness_gap": 0.16
+ }
+}

@@ -1,0 +1,402 @@
+{
+ "europe": {
+  "period": [
+   "2024-11-01T00:00",
+   "2026-10-31T23:00"
+  ],
+  "hours": 17520,
+  "candidates_downloaded": 1475,
+  "rows_pm25": 46872343,
+  "dropped_negative_rows": 481821,
+  "dropped_over_2000_rows": 18820,
+  "candidate_station_hours": 18453888,
+  "removed_flatline_hours": 136348,
+  "removed_spike_hours": 1877,
+  "coverage_threshold": 0.8,
+  "candidates_ge_80": 643,
+  "top_country_share_at_80": 0.434,
+  "candidates_ge_threshold": 643,
+  "stations": 420,
+  "per_country": {
+   "DE": 132,
+   "FR": 51,
+   "PL": 46,
+   "BE": 41,
+   "HU": 25,
+   "NL": 24,
+   "BG": 23,
+   "FI": 17,
+   "GB": 12,
+   "CY": 9,
+   "CH": 8,
+   "SK": 7,
+   "RO": 6,
+   "IS": 4,
+   "TR": 4,
+   "EE": 3,
+   "LV": 3,
+   "AD": 1,
+   "AT": 1,
+   "BA": 1,
+   "ES": 1,
+   "RU": 1
+  },
+  "per_country_candidates": {
+   "DE": {
+    "downloaded": 318,
+    "ge80": 279,
+    "ge70": 304
+   },
+   "ES": {
+    "downloaded": 199,
+    "ge80": 1,
+    "ge70": 16
+   },
+   "FR": {
+    "downloaded": 144,
+    "ge80": 77,
+    "ge70": 124
+   },
+   "IT": {
+    "downloaded": 104,
+    "ge80": 0,
+    "ge70": 1
+   },
+   "PL": {
+    "downloaded": 83,
+    "ge80": 66,
+    "ge70": 76
+   },
+   "BE": {
+    "downloaded": 79,
+    "ge80": 58,
+    "ge70": 79
+   },
+   "AT": {
+    "downloaded": 50,
+    "ge80": 1,
+    "ge70": 46
+   },
+   "SK": {
+    "downloaded": 46,
+    "ge80": 7,
+    "ge70": 46
+   },
+   "NO": {
+    "downloaded": 43,
+    "ge80": 0,
+    "ge70": 28
+   },
+   "CZ": {
+    "downloaded": 41,
+    "ge80": 0,
+    "ge70": 0
+   },
+   "HU": {
+    "downloaded": 38,
+    "ge80": 30,
+    "ge70": 34
+   },
+   "SE": {
+    "downloaded": 37,
+    "ge80": 0,
+    "ge70": 5
+   },
+   "BG": {
+    "downloaded": 34,
+    "ge80": 27,
+    "ge70": 33
+   },
+   "NL": {
+    "downloaded": 29,
+    "ge80": 28,
+    "ge70": 29
+   },
+   "FI": {
+    "downloaded": 23,
+    "ge80": 17,
+    "ge70": 21
+   },
+   "JE": {
+    "downloaded": 23,
+    "ge80": 0,
+    "ge70": 16
+   },
+   "AM": {
+    "downloaded": 22,
+    "ge80": 0,
+    "ge70": 5
+   },
+   "GB": {
+    "downloaded": 19,
+    "ge80": 12,
+    "ge70": 14
+   },
+   "SI": {
+    "downloaded": 19,
+    "ge80": 0,
+    "ge70": 18
+   },
+   "RO": {
+    "downloaded": 18,
+    "ge80": 6,
+    "ge70": 10
+   },
+   "PT": {
+    "downloaded": 14,
+    "ge80": 0,
+    "ge70": 0
+   },
+   "HR": {
+    "downloaded": 12,
+    "ge80": 0,
+    "ge70": 0
+   },
+   "IS": {
+    "downloaded": 12,
+    "ge80": 4,
+    "ge70": 4
+   },
+   "CH": {
+    "downloaded": 9,
+    "ge80": 8,
+    "ge70": 8
+   },
+   "CY": {
+    "downloaded": 9,
+    "ge80": 9,
+    "ge70": 9
+   },
+   "GR": {
+    "downloaded": 8,
+    "ge80": 0,
+    "ge70": 3
+   },
+   "IE": {
+    "downloaded": 7,
+    "ge80": 0,
+    "ge70": 3
+   },
+   "LV": {
+    "downloaded": 7,
+    "ge80": 3,
+    "ge70": 7
+   },
+   "MT": {
+    "downloaded": 6,
+    "ge80": 0,
+    "ge70": 4
+   },
+   "EE": {
+    "downloaded": 6,
+    "ge80": 3,
+    "ge70": 6
+   },
+   "TR": {
+    "downloaded": 5,
+    "ge80": 4,
+    "ge70": 5
+   },
+   "LU": {
+    "downloaded": 4,
+    "ge80": 0,
+    "ge70": 4
+   },
+   "BA": {
+    "downloaded": 2,
+    "ge80": 1,
+    "ge70": 2
+   },
+   "DK": {
+    "downloaded": 1,
+    "ge80": 0,
+    "ge70": 1
+   },
+   "AD": {
+    "downloaded": 1,
+    "ge80": 1,
+    "ge70": 1
+   },
+   "RU": {
+    "downloaded": 1,
+    "ge80": 1,
+    "ge70": 1
+   },
+   "RS": {
+    "downloaded": 1,
+    "ge80": 0,
+    "ge70": 1
+   },
+   "MA": {
+    "downloaded": 1,
+    "ge80": 0,
+    "ge70": 0
+   }
+  },
+  "station_hours": 7358400,
+  "observed_hours": 6444929,
+  "interpolated_short_gap_hours": 329587,
+  "missing_hours": 583884,
+  "median_station_coverage": 0.87785,
+  "transliterated_names": 0
+ },
+ "asia": {
+  "period": [
+   "2024-11-01T00:00",
+   "2026-10-31T23:00"
+  ],
+  "hours": 17520,
+  "candidates_downloaded": 726,
+  "rows_pm25": 14545878,
+  "dropped_negative_rows": 4161,
+  "dropped_over_2000_rows": 192795,
+  "candidate_station_hours": 9809468,
+  "removed_flatline_hours": 43560,
+  "removed_spike_hours": 2127,
+  "coverage_threshold": 0.7,
+  "candidates_ge_80": 387,
+  "top_country_share_at_80": 0.408,
+  "candidates_ge_threshold": 557,
+  "stations": 423,
+  "per_country": {
+   "JP": 98,
+   "KR": 85,
+   "IN": 59,
+   "TH": 57,
+   "TW": 50,
+   "LA": 30,
+   "HK": 18,
+   "PH": 6,
+   "SG": 4,
+   "CN": 3,
+   "MY": 3,
+   "KP": 2,
+   "KH": 1,
+   "KZ": 1,
+   "MM": 1,
+   "MV": 1,
+   "NP": 1,
+   "PK": 1,
+   "TJ": 1,
+   "VN": 1
+  },
+  "per_country_candidates": {
+   "JP": {
+    "downloaded": 182,
+    "ge80": 158,
+    "ge70": 176
+   },
+   "KR": {
+    "downloaded": 141,
+    "ge80": 124,
+    "ge70": 134
+   },
+   "IN": {
+    "downloaded": 118,
+    "ge80": 0,
+    "ge70": 64
+   },
+   "TH": {
+    "downloaded": 90,
+    "ge80": 17,
+    "ge70": 59
+   },
+   "TW": {
+    "downloaded": 51,
+    "ge80": 48,
+    "ge70": 50
+   },
+   "LA": {
+    "downloaded": 45,
+    "ge80": 6,
+    "ge70": 30
+   },
+   "KZ": {
+    "downloaded": 31,
+    "ge80": 1,
+    "ge70": 1
+   },
+   "HK": {
+    "downloaded": 18,
+    "ge80": 17,
+    "ge70": 18
+   },
+   "PH": {
+    "downloaded": 16,
+    "ge80": 3,
+    "ge70": 6
+   },
+   "CN": {
+    "downloaded": 7,
+    "ge80": 2,
+    "ge70": 3
+   },
+   "SG": {
+    "downloaded": 4,
+    "ge80": 2,
+    "ge70": 4
+   },
+   "ID": {
+    "downloaded": 4,
+    "ge80": 0,
+    "ge70": 0
+   },
+   "PK": {
+    "downloaded": 4,
+    "ge80": 1,
+    "ge70": 1
+   },
+   "TJ": {
+    "downloaded": 3,
+    "ge80": 1,
+    "ge70": 1
+   },
+   "MY": {
+    "downloaded": 3,
+    "ge80": 2,
+    "ge70": 3
+   },
+   "KP": {
+    "downloaded": 2,
+    "ge80": 2,
+    "ge70": 2
+   },
+   "VN": {
+    "downloaded": 2,
+    "ge80": 1,
+    "ge70": 1
+   },
+   "MM": {
+    "downloaded": 1,
+    "ge80": 0,
+    "ge70": 1
+   },
+   "LK": {
+    "downloaded": 1,
+    "ge80": 0,
+    "ge70": 0
+   },
+   "NP": {
+    "downloaded": 1,
+    "ge80": 1,
+    "ge70": 1
+   },
+   "MV": {
+    "downloaded": 1,
+    "ge80": 1,
+    "ge70": 1
+   },
+   "KH": {
+    "downloaded": 1,
+    "ge80": 0,
+    "ge70": 1
+   }
+  },
+  "station_hours": 7410960,
+  "observed_hours": 6165650,
+  "interpolated_short_gap_hours": 268933,
+  "missing_hours": 976377,
+  "median_station_coverage": 0.8373,
+  "transliterated_names": 264
+ }
+}
