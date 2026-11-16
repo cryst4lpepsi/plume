@@ -26,6 +26,18 @@ Judgement calls, one line of reasoning each. Newest at the bottom of each sectio
 - **Night-lights texture comes from NASA GIBS** (`VIIRS_Black_Marble` layer, WMS, 4096x2048). The direct NASA image hosts were unreachable through the proxy.
 - **Station names:** 264 Asian names romanised (Hangul: hangul-romanize; Japanese: pykakasi Hepburn; Chinese-script names in TW/CN/HK: pypinyin without tones; Thai and others: unidecode). Machine romanisation is rough, especially for Thai and Japanese addresses; originals are kept in `data/processed/asia_transliterated.json`. City names come from GeoNames ASCII names.
 
+## Data (more sources)
+These were added after the first full run. The numbers in README.md and REPORT.md come from that run and do not use them yet.
+- **Europe is also read straight from the EEA Air Quality Download Service** (`ml/plume_data/eea.py`, no key). OpenAQ carries only part of the EEA feed. Of 3,596 EEA sampling points in the Europe box, 1,328 have 80 % hourly coverage and data in the test months, against 643 from OpenAQ: Spain 187, Czechia 49, Italy 28, Sweden 18, where OpenAQ had almost none. EEA has no usable hourly series for the UK, Ireland, Turkey, Denmark or Hungary in this period, so OpenAQ stays for those.
+- **Two EEA datasets are joined per sampling point:** verified (E1a) to the end of 2025 and up-to-date (E2a) from 2026. Rows with validity below 1 (invalid, maintenance) are dropped, then the same rules as OpenAQ apply. Daily (gravimetric) series are ignored; that is most of what Italy reports.
+- **EEA hour label = the published End time.** On stations present in both sources, OpenAQ's hourly value equals the EEA value whose End is that hour (mean absolute difference 0.0 for FR, PL and FI), so both sources share one convention.
+- **Same site, two sources.** Candidates within 100 m of each other count as one site and the one with the best coverage is kept (`drop_same_site` in `prepare.py`). This also removes twin instruments at one site, which would otherwise be near-copies in the graph.
+- **EEA station ids** are 1,000,000,000 + CRC32 of the sampling point id (mod 10^9): stable, integer, and clear of OpenAQ's range.
+- **The OpenAQ API has the same Indian gap as the archive.** Checked with a key: 25 of 25 sampled Indian sensors active in 2026 have no hours in December 2024. India's first winter cannot be recovered from OpenAQ.
+- **Fires come from NASA FIRMS, VIIRS on NOAA-21, near-real-time stream** (`ml/plume_data/firms.py`). It is the only stream that covers the whole period from one satellite, so the feature does not change meaning between training and test. Low-confidence detections are dropped. Persistent industrial heat sources (flares, steel works) are not removed; they are constant and the model can learn to ignore them.
+- **Fire features:** fire radiative power summed within 100 km and within 300 km of each station over the 24 h ending at each hour, as log1p(MW) / 5. Only past detections are used. The near-real-time stream is published about 3 h after the overpass; that delay is not modelled.
+- **FIRMS needs a free key** (`FIRMS_MAP_KEY`). Without it the step is skipped and both features are zero, so the keyless pipeline still runs; `results/graph.json` records which case a run was.
+
 ## Model
 - **PM2.5 is modelled as log1p(x) minus a constant**, and forecasts are deltas from the last observed value. Quantiles survive the monotone transform, and both regions share one scale for the shared model.
 - **Dynamic wind edge feature** = wind at the source station projected on the bearing to the destination, as three summaries (now, 6 h mean, 24 h mean), fed to the attention and gate MLPs. Per-step message passing inside the GRU would cost about 48x more.

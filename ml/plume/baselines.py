@@ -39,7 +39,7 @@ def lgb_features(d, t):
         with np.errstate(all="ignore"):
             cols += [np.nanmean(win, 0), np.nanmin(win, 0), np.nanmax(win, 0), np.nanstd(win, 0)]
     cols += [d["anchor"][t], d["age"][t]]
-    cols += [X[t][..., k] for k in range(2, 12)]                          # weather now + calendar
+    cols += [X[t][..., k] for k in range(2, X.shape[-1])]                 # weather now, calendar, fires
     cols += [d["wind"][t][..., k] for k in range(2, 6)]                   # 6 h and 24 h mean wind
     cols += [np.broadcast_to(d["lat"][None, :], (len(t), n)), np.broadcast_to(d["lon"][None, :], (len(t), n))]
     return np.stack(cols, -1).reshape(len(t) * n, -1).astype(np.float32)

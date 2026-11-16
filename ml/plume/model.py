@@ -7,7 +7,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from .config import HORIZON
 
-N_FEAT = 12
+N_FEAT = 14
 
 
 class MPLayer(nn.Module):

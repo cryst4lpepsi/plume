@@ -18,10 +18,12 @@ data:             ## download + clean observations, pick stations, extract ERA5 
 	$(PY) -m plume_data.probe_extra
 	$(PY) -m plume_data.shortlist
 	$(PY) -m plume_data.download 0 1
+	$(PY) -m plume_data.eea
 	$(PY) -m plume_data.prepare
 	$(PY) -m plume_data.om_fetch cams_europe
 	$(PY) -m plume_data.om_fetch cams_global
 	$(PY) -m plume_data.om_fetch copernicus_era5
+	$(PY) -m plume_data.firms
 	$(MAKE) tensors
 
 tensors:          ## model-ready arrays and graphs

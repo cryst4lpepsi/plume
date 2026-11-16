@@ -6,6 +6,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from .config import *
+from plume_data import firms
 
 PROC, OM, OUT = Path("data/processed"), Path("data/om"), Path("data/tensors")
 
@@ -97,10 +98,13 @@ def build(region):
     valid = ~np.isnan(pm)
     zpm = np.where(valid, to_z(np.nan_to_num(pm)), 0).astype(np.float32)
     cal = local_calendar([s["tz"] for s in st])
+    # fire radiative power within 100 and 300 km over the last 24 h; zeros if FIRMS was not downloaded
+    det = firms.load(region)
+    fire = np.log1p(firms.fire_load(*det, lat, lon)) / 5 if det else np.zeros((NH, len(st), len(firms.RADII_KM)), np.float32)
     X = np.concatenate([zpm[..., None], valid[..., None].astype(np.float32),
                         (u / 5)[..., None], (v / 5)[..., None], ((t2 - 10) / 10)[..., None], rh[..., None],
                         np.log1p(np.maximum(pr, 0))[..., None], (np.log(np.maximum(blh, 1) + 10) - 6)[..., None],
-                        cal], -1).astype(np.float32)
+                        cal, fire], -1).astype(np.float32)
     assert not np.isnan(X).any(), "weather has gaps"
     # anchor: last valid z within the previous 48 h (NaN if none) and its age in hours
     last = np.where(valid, np.arange(NH)[:, None], -1)
@@ -116,7 +120,7 @@ def build(region):
     np.savez(OUT / f"{region}.npz", X=X, pm=pm, observed=valid & ~filled, anchor=anchor, age=age, wind=wind,
              cams=cams.astype(np.float32), lat=lat, lon=lon, src=src, dst=dst, dist=dist, bear=bear)
     deg = np.bincount(dst, minlength=len(st))
-    return dict(stations=len(st), edges=int(len(src)), isolated_self_loop_only=isolated, max_km=MAX_KM[region],
+    return dict(stations=len(st), fire_features=det is not None, edges=int(len(src)), isolated_self_loop_only=isolated, max_km=MAX_KM[region],
                 k=K_NEIGHBOURS, mean_in_degree=float(deg.mean()), median_edge_km=float(np.median(dist)),
                 mean_edge_km=float(dist.mean()), share_nodes_full_degree=float((deg == K_NEIGHBOURS).mean()),
                 median_nearest_km=float(np.median([dist[dst == i].min() for i in range(len(st)) if (dst == i).any()])))

@@ -95,11 +95,11 @@ The interpretation, with its caveats, is in [REPORT.md](REPORT.md#ablation-does-
 
 ## Run it
 
-Requirements: Python 3.11+, Node 20+, about 30 GB of free disk for the data stage. No GPU, no API keys.
+Requirements: Python 3.11+, Node 20+, about 30 GB of free disk for the data stage. No GPU. No API keys are needed; an optional free NASA key adds the fire inputs.
 
 ```bash
 make setup     # Python venv and web dependencies
-make data      # download OpenAQ, ERA5 and CAMS extracts; clean; choose stations (about 1 h, network-bound)
+make data      # download OpenAQ, EEA, ERA5, CAMS and fire extracts; clean; choose stations (about 1 h, network-bound)
 make train     # baselines and all graph-model runs (about 2.5 h on 4 CPU cores; safe to re-run after an interruption)
 make eval      # re-score everything, rewrite results/*.json, re-export the app data, verify it, refresh the tables
 make web       # dev server on http://localhost:5173
@@ -132,6 +132,10 @@ docs/           screenshots, font test shots
 - **Observations:** [OpenAQ](https://openaq.org), open-data archive on AWS. OpenAQ aggregates measurements
   from many government and research providers, each under its own licence; check the provider's terms before
   reusing station data.
+- **European observations (added after the published run):** [European Environment Agency](https://www.eea.europa.eu/en/datahub),
+  Air Quality Download Service, hourly data reported by member countries (E1a and E2a).
+- **Fires (added after the published run):** NASA [FIRMS](https://firms.modaps.eosdis.nasa.gov), VIIRS active fires
+  from NOAA-21. Needs a free key in `FIRMS_MAP_KEY`; without it the fire inputs are zero.
 - **CAMS PM2.5 baseline and ERA5 weather:** Copernicus Atmosphere Monitoring Service and Copernicus Climate
   Change Service, through [Open-Meteo](https://open-meteo.com)'s open-data distribution (CC BY 4.0).
   Contains modified Copernicus information.
