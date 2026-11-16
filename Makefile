@@ -1,13 +1,13 @@
 # Plume: one command per stage. Everything runs from the repo root.
 PY := PYTHONPATH=ml .venv/bin/python
 
-.PHONY: setup data tensors train eval export report check web build
+.PHONY: setup data tensors train eval export report check test web build
 
 setup:            ## Python venv + web dependencies
 	python3 -m venv .venv
 	.venv/bin/pip install -q --upgrade pip
 	.venv/bin/pip install -q torch --index-url https://download.pytorch.org/whl/cpu
-	.venv/bin/pip install -q -r ml/requirements.txt
+	.venv/bin/pip install -q -r ml/requirements.txt pytest
 	cd web && npm install
 
 data:             ## download + clean observations, pick stations, extract ERA5 and CAMS (about 1 h, 60 GB transferred)
@@ -45,6 +45,9 @@ report:           ## refresh the result tables in README.md and REPORT.md
 
 check:            ## reload the shipped binaries and reproduce results/replay_check.json
 	$(PY) -m plume.check_export
+
+test:             ## unit tests (cleaning, selection, graph, metrics)
+	$(PY) -m pytest ml/tests -q
 
 web:              ## dev server
 	cd web && npm run dev

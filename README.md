@@ -1,6 +1,11 @@
 # Plume
 
+[![CI](https://github.com/cryst4lpepsi/plume/actions/workflows/ci.yml/badge.svg)](https://github.com/cryst4lpepsi/plume/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 PM2.5 across Europe and Asia, forecast 24 hours ahead by a graph of monitoring stations.
+
+**[Open the live app](https://cryst4lpepsi.github.io/plume/)** (best on a desktop browser with WebGL).
 
 Air-quality stations are nodes. Edges join neighbours and carry how strongly the wind blows from one to the
 other. A small spatiotemporal graph network forecasts hourly PM2.5 for the next 24 hours at every station,
@@ -99,6 +104,7 @@ make train     # baselines and all graph-model runs (about 2.5 h on 4 CPU cores;
 make eval      # re-score everything, rewrite results/*.json, re-export the app data, verify it, refresh the tables
 make web       # dev server on http://localhost:5173
 make build     # static site in web/dist
+make test      # unit tests for the cleaning rules, station selection, graph and metrics
 ```
 
 `make eval` is the one command that reproduces every number in the app and in this file from saved
@@ -114,6 +120,7 @@ without running the pipeline.
 ml/plume_data/   discovery, download, cleaning, station selection, ERA5/CAMS extraction
 ml/plume/        tensors and graphs, baselines, model, training, evaluation, export
 ml/tools/       colour-vision and contrast checks, table rendering
+ml/tests/       unit tests for cleaning, station selection, graph and metrics
 qa/             screenshot, command-bar and frame-rate scripts (Playwright; need `make web` running)
 results/        every metric as JSON, each with the script and commit that wrote it
 web/            Vite + React + TypeScript + three.js app
@@ -136,3 +143,6 @@ docs/           screenshots, font test shots
 
 - [REPORT.md](REPORT.md): data quality and coverage, every experiment, failures, limitations.
 - [DECISIONS.md](DECISIONS.md): judgement calls made during the build, including the font test.
+
+The code is released under the [MIT licence](LICENSE). The data keeps the licences of its sources, listed
+above.
