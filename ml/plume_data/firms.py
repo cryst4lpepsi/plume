@@ -43,13 +43,16 @@ async def fetch(sess, sem, key, region, day):
         return
     r = REGIONS[region]
     box = f"{r['lon'][0] - MARGIN_DEG},{r['lat'][0] - MARGIN_DEG},{r['lon'][1] + MARGIN_DEG},{r['lat'][1] + MARGIN_DEG}"
-    for i in range(8):
-        async with sem:
-            text = await get(sess, f"{API}/{key}/{SOURCE}/{box}/{DAYS}/{day}")
+    for i in range(12):
+        try:
+            async with sem:
+                text = await get(sess, f"{API}/{key}/{SOURCE}/{box}/{DAYS}/{day}", tries=1)
+        except Exception as e:   # over the limit the API answers HTTP 400 "Invalid MAP_KEY"
+            text = str(e)
         if text and text.startswith("latitude,longitude"):
             f.write_text(text, encoding="utf-8")
             return
-        await asyncio.sleep(60 * (i + 1))   # the key allows a fixed number of transactions per 10 minutes
+        await asyncio.sleep(120)   # the key allows 5,000 transactions per 10 minutes; wait for the window to move
     raise RuntimeError(f"FIRMS {region} {day}: {(text or '')[:200]}")
 
 
