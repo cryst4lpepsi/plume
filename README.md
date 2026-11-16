@@ -38,7 +38,7 @@ Europe. The test period has no winter. Details and caveats are in [REPORT.md](RE
 | Model | 1 h | 3 h | 6 h | 12 h | 24 h | Skill vs persistence at 24 h |
 |---|---:|---:|---:|---:|---:|---:|
 | Plume graph model | 1.04 ±0.00 | **1.71 ±0.00** | **2.15 ±0.01** | **2.52 ±0.01** | **2.81 ±0.01** | +17.9% |
-| LightGBM (no graph) | **1.04** | 1.78 | 2.27 | 2.60 | 2.82 | +17.7% |
+| LightGBM (no graph) | **1.04** | 1.78 | 2.27 | 2.60 | 2.83 | +17.6% |
 | Persistence | 1.11 | 2.10 | 2.87 | 3.41 | 3.43 | reference |
 | Seasonal naive | 3.31 | 3.36 | 3.40 | 3.42 | 3.43 | +0.0% |
 | CAMS via Open-Meteo | 3.29 | 3.29 | 3.29 | 3.29 | 3.29 | +4.1% |
@@ -48,7 +48,7 @@ Europe. The test period has no winter. Details and caveats are in [REPORT.md](RE
 | Model | 1 h | 3 h | 6 h | 12 h | 24 h | Skill vs persistence at 24 h |
 |---|---:|---:|---:|---:|---:|---:|
 | Plume graph model | **2.47 ±0.00** | **3.61 ±0.02** | **4.20 ±0.02** | **4.66 ±0.02** | **5.09 ±0.00** | +14.7% |
-| LightGBM (no graph) | 2.48 | 3.73 | 4.33 | 4.76 | 5.17 | +13.5% |
+| LightGBM (no graph) | 2.49 | 3.73 | 4.33 | 4.76 | 5.18 | +13.3% |
 | Persistence | 2.63 | 4.28 | 5.36 | 5.95 | 5.98 | reference |
 | Seasonal naive | 5.76 | 5.85 | 5.91 | 5.94 | 5.98 | +0.0% |
 | CAMS via Open-Meteo | 9.47 | 9.47 | 9.47 | 9.47 | 9.46 | -58.4% |
@@ -71,7 +71,7 @@ How to read this:
 |---|---|---:|---:|---:|---:|---:|---:|
 | Europe (median edge 65 km) | No graph | 3 | 2.503 ±0.009 | 1.08 ±0.00 | 2.34 ±0.01 | 2.90 ±0.01 | reference |
 | Europe (median edge 65 km) | Distance-only edges | 3 | 2.399 ±0.001 | 1.05 ±0.00 | 2.19 ±0.00 | 2.81 ±0.00 | -4.16% |
-| Europe (median edge 65 km) | Wind-aware edges | 3 | 2.393 ±0.001 | 1.04 ±0.00 | 2.18 ±0.01 | 2.81 ±0.00 | -4.40% |
+| Europe (median edge 65 km) | Wind-aware edges | 3 | 2.393 ±0.001 | 1.04 ±0.00 | 2.18 ±0.01 | 2.81 ±0.00 | -4.41% |
 | Asia (median edge 82 km) | No graph | 3 | 4.643 ±0.011 | 2.53 ±0.01 | 4.39 ±0.02 | 5.23 ±0.00 | reference |
 | Asia (median edge 82 km) | Distance-only edges | 3 | 4.508 ±0.008 | 2.47 ±0.00 | 4.23 ±0.01 | 5.10 ±0.01 | -2.92% |
 | Asia (median edge 82 km) | Wind-aware edges | 3 | 4.502 ±0.004 | 2.47 ±0.00 | 4.22 ±0.02 | 5.10 ±0.00 | -3.05% |
@@ -85,7 +85,7 @@ The interpretation, with its caveats, is in [REPORT.md](REPORT.md#ablation-does-
 | Region | 1 h | 3 h | 6 h | 12 h | 24 h | Mean over 24 h | Below P10 | Above P90 |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
 | Europe | 82.9% | 81.5% | 80.7% | 80.9% | 81.2% | 81.0% | 10.6% | 8.4% |
-| Asia | 78.9% | 79.6% | 80.1% | 80.7% | 81.0% | 80.4% | 10.4% | 9.2% |
+| Asia | 78.9% | 79.5% | 80.1% | 80.7% | 81.0% | 80.4% | 10.4% | 9.2% |
 <!-- results:calibration:end -->
 
 ## Run it

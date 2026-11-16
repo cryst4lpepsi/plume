@@ -186,7 +186,7 @@ used validation data.
 | Model | 1 h | 3 h | 6 h | 12 h | 24 h | Skill vs persistence at 24 h |
 |---|---:|---:|---:|---:|---:|---:|
 | Plume graph model | 1.04 ±0.00 | **1.71 ±0.00** | **2.15 ±0.01** | **2.52 ±0.01** | **2.81 ±0.01** | +17.9% |
-| LightGBM (no graph) | **1.04** | 1.78 | 2.27 | 2.60 | 2.82 | +17.7% |
+| LightGBM (no graph) | **1.04** | 1.78 | 2.27 | 2.60 | 2.83 | +17.6% |
 | Persistence | 1.11 | 2.10 | 2.87 | 3.41 | 3.43 | reference |
 | Seasonal naive | 3.31 | 3.36 | 3.40 | 3.42 | 3.43 | +0.0% |
 | CAMS via Open-Meteo | 3.29 | 3.29 | 3.29 | 3.29 | 3.29 | +4.1% |
@@ -196,7 +196,7 @@ used validation data.
 | Model | 1 h | 3 h | 6 h | 12 h | 24 h | Skill vs persistence at 24 h |
 |---|---:|---:|---:|---:|---:|---:|
 | Plume graph model | **2.47 ±0.00** | **3.61 ±0.02** | **4.20 ±0.02** | **4.66 ±0.02** | **5.09 ±0.00** | +14.7% |
-| LightGBM (no graph) | 2.48 | 3.73 | 4.33 | 4.76 | 5.17 | +13.5% |
+| LightGBM (no graph) | 2.49 | 3.73 | 4.33 | 4.76 | 5.18 | +13.3% |
 | Persistence | 2.63 | 4.28 | 5.36 | 5.95 | 5.98 | reference |
 | Seasonal naive | 5.76 | 5.85 | 5.91 | 5.94 | 5.98 | +0.0% |
 | CAMS via Open-Meteo | 9.47 | 9.47 | 9.47 | 9.47 | 9.46 | -58.4% |
@@ -211,7 +211,7 @@ used validation data.
 | Model | 1 h | 3 h | 6 h | 12 h | 24 h | Skill vs persistence at 24 h |
 |---|---:|---:|---:|---:|---:|---:|
 | Plume graph model | 2.66 ±0.02 | **3.83 ±0.01** | **4.36 ±0.01** | **4.74 ±0.01** | 5.07 ±0.00 |  |
-| LightGBM (no graph) | **2.65** | 3.90 | 4.50 | 4.83 | **5.07** |  |
+| LightGBM (no graph) | **2.66** | 3.90 | 4.50 | 4.85 | **5.06** |  |
 | Persistence | 2.87 | 4.69 | 5.73 | 6.37 | 6.33 |  |
 | Seasonal naive | 6.10 | 6.21 | 6.28 | 6.36 | 6.33 |  |
 | CAMS via Open-Meteo | 6.82 | 6.82 | 6.82 | 6.82 | 6.80 |  |
@@ -220,8 +220,8 @@ used validation data.
 
 | Model | 1 h | 3 h | 6 h | 12 h | 24 h | Skill vs persistence at 24 h |
 |---|---:|---:|---:|---:|---:|---:|
-| Plume graph model | 6.67 ±0.03 | **9.44 ±0.04** | **10.54 ±0.01** | **10.99 ±0.01** | **11.28 ±0.00** |  |
-| LightGBM (no graph) | **6.65** | 9.60 | 10.76 | 11.35 | 11.60 |  |
+| Plume graph model | **6.67 ±0.03** | **9.44 ±0.04** | **10.54 ±0.01** | **10.99 ±0.01** | **11.28 ±0.00** |  |
+| LightGBM (no graph) | 6.68 | 9.58 | 10.77 | 11.37 | 11.60 |  |
 | Persistence | 7.09 | 11.05 | 13.27 | 14.24 | 13.48 |  |
 | Seasonal naive | 13.07 | 13.18 | 13.28 | 13.32 | 13.48 |  |
 | CAMS via Open-Meteo | 18.97 | 18.97 | 18.97 | 18.97 | 18.97 |  |
@@ -248,7 +248,7 @@ many of them roadside or low-cost, as about CAMS. Neither CAMS series is bias-co
 |---|---|---:|---:|---:|---:|---:|---:|
 | Europe (median edge 65 km) | No graph | 3 | 2.503 ±0.009 | 1.08 ±0.00 | 2.34 ±0.01 | 2.90 ±0.01 | reference |
 | Europe (median edge 65 km) | Distance-only edges | 3 | 2.399 ±0.001 | 1.05 ±0.00 | 2.19 ±0.00 | 2.81 ±0.00 | -4.16% |
-| Europe (median edge 65 km) | Wind-aware edges | 3 | 2.393 ±0.001 | 1.04 ±0.00 | 2.18 ±0.01 | 2.81 ±0.00 | -4.40% |
+| Europe (median edge 65 km) | Wind-aware edges | 3 | 2.393 ±0.001 | 1.04 ±0.00 | 2.18 ±0.01 | 2.81 ±0.00 | -4.41% |
 | Asia (median edge 82 km) | No graph | 3 | 4.643 ±0.011 | 2.53 ±0.01 | 4.39 ±0.02 | 5.23 ±0.00 | reference |
 | Asia (median edge 82 km) | Distance-only edges | 3 | 4.508 ±0.008 | 2.47 ±0.00 | 4.23 ±0.01 | 5.10 ±0.01 | -2.92% |
 | Asia (median edge 82 km) | Wind-aware edges | 3 | 4.502 ±0.004 | 2.47 ±0.00 | 4.22 ±0.02 | 5.10 ±0.00 | -3.05% |
@@ -274,7 +274,7 @@ the daily cycle; edges of 65 to 82 km are short enough that neighbours are infor
 | Region | 1 h | 3 h | 6 h | 12 h | 24 h | Mean over 24 h | Below P10 | Above P90 |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
 | Europe | 82.9% | 81.5% | 80.7% | 80.9% | 81.2% | 81.0% | 10.6% | 8.4% |
-| Asia | 78.9% | 79.6% | 80.1% | 80.7% | 81.0% | 80.4% | 10.4% | 9.2% |
+| Asia | 78.9% | 79.5% | 80.1% | 80.7% | 81.0% | 80.4% | 10.4% | 9.2% |
 <!-- results:calibration:end -->
 
 **Reading.** Coverage is within 3 points of the 80% target at every reported horizon in both regions. The misses are
@@ -289,7 +289,7 @@ sits slightly high. In Asia the band is a little too narrow at 1 h (78.9%). No r
 | Europe (63 held out) | Graph model, own history masked | 3.26 | 3.38 | 3.57 | 3.88 | 4.21 |
 | Europe (63 held out) | Inverse-distance of neighbours' last values | 3.16 | 3.48 | 3.89 | 4.24 | 4.42 |
 | Europe (63 held out) | Inverse-distance of neighbours' forecasts | 3.08 | 3.22 | 3.47 | 3.73 | 4.02 |
-| Asia (63 held out) | Graph model, own history masked | 5.41 | 5.47 | 5.56 | 5.79 | 6.00 |
+| Asia (63 held out) | Graph model, own history masked | 5.41 | 5.48 | 5.56 | 5.79 | 6.00 |
 | Asia (63 held out) | Inverse-distance of neighbours' last values | 6.09 | 6.31 | 6.59 | 6.71 | 6.93 |
 | Asia (63 held out) | Inverse-distance of neighbours' forecasts | 5.87 | 5.90 | 5.89 | 6.08 | 6.31 |
 <!-- results:unseen:end -->
