@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 import numpy as np
 import omfiles
-from .regions import START, region_of
+from .regions import START, candidates
 
 BASE = "https://openmeteo.s3.amazonaws.com/data"
 H0 = int(datetime.fromisoformat(START).replace(tzinfo=timezone.utc).timestamp() // 3600)
@@ -39,7 +39,7 @@ def cells_for(model, pts):
 
 def main(model):
     chunk_h, lat0, lon0, step, nlat, nlon, variables = MODELS[model]
-    short = json.loads(Path("data/discover/shortlist.json").read_text())
+    short = candidates()
     if model == "cams_europe":
         short = [s for s in short if s["region"] == "europe"]
     if model == "cams_global":

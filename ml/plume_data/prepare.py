@@ -5,12 +5,13 @@ from collections import defaultdict, Counter
 from pathlib import Path
 import numpy as np
 import pandas as pd
-from .geo import country_of, city_of
-from .regions import REGIONS, START
+from .geo import country_of, city_of, haversine
+from .regions import REGIONS, START, candidates
 from .select import sqrt_quotas, farthest_point
 from .shortlist import POWER
 
 RAW, OUT = Path("data/raw_hourly"), Path("data/processed")
+RAW_EEA = Path("data/raw_hourly_eea")
 OUT.mkdir(parents=True, exist_ok=True)
 NH = 730 * 24
 TARGET = 420
@@ -18,6 +19,23 @@ FLAT_RUN = 12          # identical value for >= 12 consecutive hours => sensor f
 SPIKE_RATIO = 10.0     # single hour > 10x rolling median => spike
 SPIKE_FLOOR = 5.0      # the median is floored at 5 ug/m3 so clean-air noise is not called a spike
 MAX_INTERP = 3         # gaps up to 3 h are linearly interpolated; longer gaps stay missing
+SAME_SITE_KM = 0.1     # candidates this close are one site (OpenAQ and EEA copies, or twin instruments)
+
+
+def raw_file(c):
+    return RAW_EEA / f"{c['key']}.npz" if c.get("src") == "eea" else RAW / f"{c['id']}.npz"
+
+
+def drop_same_site(cands):
+    """Keep the best-covered candidate at each site. Returns the kept candidates and how many were dropped."""
+    cands = sorted(cands, key=lambda c: -c["coverage"])
+    lat, lon = (np.radians([c[k] for c in cands]) for k in ("lat", "lon"))
+    keep = np.ones(len(cands), bool)
+    for i in range(len(cands)):
+        if keep[i]:
+            near = haversine(lat[i], lon[i], lat[i + 1:], lon[i + 1:]) < SAME_SITE_KM
+            keep[i + 1:] &= ~near
+    return [c for c, k in zip(cands, keep) if k], int((~keep).sum())
 
 
 def clean(x):
@@ -82,15 +100,15 @@ def latin(name, iso=""):
 
 
 def main():
-    short = json.loads(Path("data/discover/shortlist.json").read_text())
+    short = candidates()
     quality = {}
     for reg in ("europe", "asia"):
         cands, series = [], {}
         tot = Counter()
         for c in short:
-            if c["region"] != reg or not (RAW / f"{c['id']}.npz").exists():
+            if c["region"] != reg or not raw_file(c).exists():
                 continue
-            z = np.load(RAW / f"{c['id']}.npz")
+            z = np.load(raw_file(c))
             st = json.loads(str(z["stats"]))
             n = z["n"]
             x = np.where(n > 0, z["sum"] / np.maximum(n, 1), np.nan)
@@ -102,6 +120,7 @@ def main():
             series[c["id"]] = x
             tot.update(candidates=1, rows=st["rows"], negative=st["negative"], over_2000=st["over_2000"],
                        raw_hours=raw_valid, flat_hours=n_flat, spike_hours=n_spike)
+        cands, n_same = drop_same_site(cands)
         # coverage threshold: 80 %, Asia may fall back to 70 %
         cov_table = defaultdict(lambda: [0, 0, 0])
         for c in cands:
@@ -135,13 +154,16 @@ def main():
             pm[:, j] = x; filled[:, j] = f
             stations.append(dict(id=c["id"], name=name, city=city, city_km=round(city_km, 1), city_pop=pop,
                                  iso=iso, country=country, tz=tz, lat=round(c["lat"], 5), lon=round(c["lon"], 5),
-                                 coverage=round(c["coverage"], 4)))
+                                 coverage=round(c["coverage"], 4), source=c.get("src", "openaq"),
+                                 area=c.get("area"), type=c.get("type")))
         np.savez_compressed(OUT / f"{reg}.npz", pm=pm, filled=filled)
         (OUT / f"{reg}_stations.json").write_text(json.dumps(stations, ensure_ascii=False, indent=0))
         (OUT / f"{reg}_transliterated.json").write_text(json.dumps(translit, ensure_ascii=False, indent=0))
         cc = Counter(s["iso"] for s in stations)
         quality[reg] = dict(
             period=[START, "2026-10-31T23:00"], hours=NH, candidates_downloaded=tot["candidates"],
+            same_site_duplicates_dropped=n_same, candidate_sites=len(cands),
+            stations_by_source=dict(Counter(s["source"] for s in stations)),
             rows_pm25=tot["rows"], dropped_negative_rows=tot["negative"], dropped_over_2000_rows=tot["over_2000"],
             candidate_station_hours=tot["raw_hours"], removed_flatline_hours=tot["flat_hours"],
             removed_spike_hours=tot["spike_hours"], coverage_threshold=thr,

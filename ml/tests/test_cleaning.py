@@ -72,3 +72,12 @@ def test_leading_gap_is_not_extrapolated():
     x[:2] = np.nan
     out, filled = interp_short(x)
     assert np.isnan(out[:2]).all() and not filled.any()
+
+
+def test_same_site_keeps_best_coverage():
+    from plume_data.prepare import drop_same_site
+    cands = [dict(id=1, lat=45.0, lon=9.0, coverage=0.7),
+             dict(id=2, lat=45.0002, lon=9.0002, coverage=0.9),   # about 27 m from id 1
+             dict(id=3, lat=45.01, lon=9.0, coverage=0.5)]        # about 1.1 km away
+    kept, dropped = drop_same_site(cands)
+    assert dropped == 1 and [c["id"] for c in kept] == [2, 3]

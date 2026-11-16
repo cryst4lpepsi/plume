@@ -9,6 +9,17 @@ START, END = "2024-11-01T00:00", "2026-11-01T00:00"  # UTC, end exclusive
 VAL_START, TEST_START = "2026-05-01T00:00", "2026-08-01T00:00"
 
 
+def candidates():
+    """Every station that was downloaded: the OpenAQ shortlist plus, when present, the EEA sampling points."""
+    import json
+    from pathlib import Path
+    d = Path("data/discover")
+    out = json.loads((d / "shortlist.json").read_text(encoding="utf-8"))
+    if (d / "eea_candidates.json").exists():
+        out += json.loads((d / "eea_candidates.json").read_text(encoding="utf-8"))
+    return out
+
+
 def region_of(lat, lon):
     for name, r in REGIONS.items():
         if r["lat"][0] <= lat <= r["lat"][1] and r["lon"][0] <= lon <= r["lon"][1]:
