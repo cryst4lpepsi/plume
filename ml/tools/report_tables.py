@@ -11,26 +11,70 @@ NAMES = [("plume", "Plume graph model"), ("lightgbm", "LightGBM (no graph)"), ("
 REG = (("europe", "Europe"), ("asia", "Asia"))
 
 
+HAVE = lambda n: (R / f"{n}.json").exists()
+NOT_RUN = "_Not run yet._"
+
+
+def model_rows(t, metric="mae"):
+    """One table of models by horizon; the best value in each column is bold."""
+    out = ["| Model | " + " | ".join(f"{h} h" for h in HS) + " | Skill vs persistence at 24 h |", "|---|" + "---:|" * (len(HS) + 1)]
+    for k, name in NAMES:
+        if k not in t:
+            continue
+        cells = []
+        for h in HS:
+            best = min(t[j][metric][h - 1] for j, _ in NAMES if j in t)
+            v = f"{t[k][metric][h-1]:.2f}"
+            sd = t[k].get(f"{metric}_sd")
+            if sd:
+                v += f" ±{sd[h-1]:.2f}"
+            cells.append(f"**{v}**" if t[k][metric][h - 1] == best else v)
+        sk = "reference" if k == "persistence" else f"{t[k]['skill'][23]*100:+.1f}%"
+        out.append(f"| {name} | " + " | ".join(cells) + f" | {sk if metric == 'mae' else ''} |")
+    return out + [""]
+
+
 def main_table(metric="mae"):
     m = J("main"); out = []
     for r, label in REG:
-        t = m[r]["test"]
-        out += [f"**{label}** ({metric.upper()}, µg/m³, test period; chosen model: {m[r]['chosen'].replace('plume_', '').replace('_', '-')})", "",
-                "| Model | " + " | ".join(f"{h} h" for h in HS) + " | Skill vs persistence at 24 h |", "|---|" + "---:|" * (len(HS) + 1)]
-        for k, name in NAMES:
-            if k not in t:
-                continue
-            cells = []
-            for h in HS:
-                best = min(t[j][metric][h - 1] for j, _ in NAMES if j in t)
-                v = f"{t[k][metric][h-1]:.2f}"
-                sd = t[k].get(f"{metric}_sd")
-                if sd:
-                    v += f" ±{sd[h-1]:.2f}"
-                cells.append(f"**{v}**" if t[k][metric][h - 1] == best else v)
-            sk = "reference" if k == "persistence" else f"{t[k]['skill'][23]*100:+.1f}%"
-            out.append(f"| {name} | " + " | ".join(cells) + f" | {sk if metric == 'mae' else ''} |")
-        out.append("")
+        out += [f"**{label}** ({metric.upper()}, µg/m³, test period; chosen model: {m[r]['chosen'].replace('plume_', '').replace('_', '-')})", ""]
+        out += model_rows(m[r]["test"], metric)
+    return "\n".join(out)
+
+
+def winter_table():
+    if not HAVE("winter"):
+        return NOT_RUN
+    w = J("winter"); out = []
+    for r, label in REG:
+        if w.get(r):
+            out += [f"**{label}** (MAE, µg/m³, December 2025 to February 2026; models trained on data to August 2025)", ""] + model_rows(w[r])
+    return "\n".join(out) or NOT_RUN
+
+
+def india_table():
+    x = J("slices").get("asia", {}).get("india") if HAVE("slices") else None
+    if not x:
+        return NOT_RUN
+    out = []
+    for k, label in (("test", "August to October 2026"), ("winter", "December 2025 to February 2026, models trained on data to August 2025")):
+        if x.get(k):
+            out += [f"**India, {x['stations']} stations** (MAE, µg/m³, {label})", ""] + model_rows(x[k])
+    return "\n".join(out) or NOT_RUN
+
+
+def types_table():
+    x = J("slices").get("europe") if HAVE("slices") else None
+    if not x:
+        return NOT_RUN
+    out = ["| Station type | Stations | Period | Plume 1 h | Plume 24 h | LightGBM 24 h | Persistence 24 h | Plume skill at 24 h |", "|---|---:|---|---:|---:|---:|---:|---:|"]
+    cell = lambda t, k, h: f"{t[k]['mae'][h-1]:.2f}" if k in t else ""
+    for name, v in x.items():
+        for k, label in (("test", "Aug to Oct 2026"), ("winter", "Dec 2025 to Feb 2026")):
+            t = v.get(k)
+            if t:
+                out.append(f"| {name.capitalize()} | {v['stations']} | {label} | {cell(t, 'plume', 1)} | {cell(t, 'plume', 24)} | {cell(t, 'lightgbm', 24)} | "
+                           f"{cell(t, 'persistence', 24)} | " + (f"{t['plume']['skill'][23]*100:+.1f}%" if "plume" in t else "") + " |")
     return "\n".join(out)
 
 
@@ -91,7 +135,8 @@ def quality_table():
 
 
 BLOCKS = {"main": lambda: main_table("mae"), "rmse": lambda: main_table("rmse"), "ablation": ablation_table,
-          "calibration": calibration_table, "unseen": unseen_table, "quality": quality_table}
+          "calibration": calibration_table, "unseen": unseen_table, "quality": quality_table,
+          "winter": winter_table, "india": india_table, "types": types_table}
 
 
 def main():

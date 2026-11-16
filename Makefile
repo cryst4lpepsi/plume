@@ -29,7 +29,7 @@ data:             ## download + clean observations, pick stations, extract ERA5 
 tensors:          ## model-ready arrays and graphs
 	$(PY) -m plume.data
 
-train:            ## baselines + every graph-model run (resumable; about 2.5 h on 4 cores)
+train:            ## baselines, tuning runs, then every graph-model run (resumable; several hours on 4 cores)
 	$(PY) -m plume.queue
 
 eval:             ## re-score every model from saved predictions, rewrite results/*.json, re-export and verify

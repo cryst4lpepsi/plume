@@ -2,7 +2,7 @@
 
 python -m plume.train --tag eu_wind_s0 --regions europe --mode wind --seed 0
 Outputs: data/runs/{tag}.pt, data/runs/{tag}.json (config, val curve, timing),
-         data/preds/{region}_{split}_{tag}.npy  [O, N, 24, 3] float16 ug/m3 (val + test)."""
+         data/preds/{region}_{split}_{tag}.npy  [O, N, 24, 3] float16 ug/m3 (val + test, see --preds)."""
 import argparse, json, time
 from pathlib import Path
 import numpy as np
@@ -74,6 +74,8 @@ def main():
     ap.add_argument("--batch", type=int, default=8); ap.add_argument("--lr", type=float, default=2e-3)
     ap.add_argument("--stride", type=int, default=6); ap.add_argument("--threads", type=int, default=1)
     ap.add_argument("--unseen", type=float, default=0.0, help="share of stations held out entirely (experiment 4)")
+    ap.add_argument("--scheme", default="main", choices=list(SCHEMES), help="which train/val/test periods to use")
+    ap.add_argument("--preds", default="all", choices=["all", "test", "none"], help="which predictions to keep")
     ap.add_argument("--max-steps", type=int, default=0, help="smoke-test limit")
     a = ap.parse_args()
     torch.set_num_threads(a.threads); torch.manual_seed(a.seed); rng = np.random.default_rng(a.seed)
@@ -87,7 +89,8 @@ def main():
         regs.append(Region(r, hold))
     model = PlumeNet(a.hidden, a.layers, a.mode)
     n_par = sum(p.numel() for p in model.parameters())
-    tr = origins("train"); va = origins("val")[::6]
+    pre = SCHEMES[a.scheme]
+    tr = origins(pre + "train"); va = origins(pre + "val")[::6]
     steps_per_epoch = sum(len(tr) // a.stride // a.batch for _ in regs)
     total = steps_per_epoch * a.epochs
     opt = torch.optim.AdamW(model.parameters(), lr=a.lr, weight_decay=1e-4)
@@ -144,7 +147,7 @@ def main():
             best = vm; torch.save(model.state_dict(), RUNS / f"{a.tag}.pt")
     model.load_state_dict(torch.load(RUNS / f"{a.tag}.pt"))
     for R in regs:
-        for split in ("val", "test"):
+        for split in {"all": (pre + "val", pre + "test"), "test": (pre + "test",), "none": ()}[a.preds]:
             p, _ = predict(model, R, origins(split), hide_holdout=a.unseen > 0)
             np.save(PRED / f"{R.name}_{split}_{a.tag}.npy", p.astype(np.float16))
     (RUNS / f"{a.tag}.json").write_text(json.dumps(dict(vars(a), params=n_par, history=hist, best_val=best,

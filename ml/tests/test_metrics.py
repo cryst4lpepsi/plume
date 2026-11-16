@@ -1,6 +1,6 @@
 """Scoring: masked MAE/RMSE, skill against persistence, interval coverage."""
 import numpy as np
-from plume.config import HORIZON, SPLITS, from_z, origins, to_z
+from plume.config import HORIZON, SCHEMES, SPLITS, T0, from_z, origins, to_z
 from plume.metrics import add_skill, coverage, score
 
 
@@ -51,3 +51,12 @@ def test_origins_keep_targets_inside_their_split():
     # no forecast origin is shared between splits
     assert not set(origins("val")) & set(origins("test"))
     assert not set(origins("train")) & set(origins("val"))
+    assert not set(origins("wval")) & set(origins("wtest"))
+    assert not set(origins("wtrain")) & set(origins("wval"))
+
+
+def test_winter_test_is_december_to_february_and_follows_its_training():
+    a, b = SPLITS["wtest"]
+    assert str(T0 + np.timedelta64(a, "h")) == "2025-12-01T00" and str(T0 + np.timedelta64(b, "h")) == "2026-03-01T00"
+    assert SPLITS["wtrain"][1] == SPLITS["wval"][0] and SPLITS["wval"][1] == a
+    assert all(p + s in SPLITS for p in SCHEMES.values() for s in ("train", "val", "test"))

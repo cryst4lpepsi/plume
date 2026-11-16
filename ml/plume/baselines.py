@@ -45,12 +45,45 @@ def lgb_features(d, t):
     return np.stack(cols, -1).reshape(len(t) * n, -1).astype(np.float32)
 
 
-def lgb_fit_predict(region, seed=0):
+# LightGBM settings tried on validation (horizons 1, 6 and 24 h); the first is the original setting
+LGB_GRID = (dict(n_estimators=200, learning_rate=0.12, num_leaves=63, min_child_samples=100),
+            dict(n_estimators=500, learning_rate=0.06, num_leaves=127, min_child_samples=100),
+            dict(n_estimators=500, learning_rate=0.06, num_leaves=255, min_child_samples=200))
+TUNE_H = (1, 6, 24)
+
+
+def lgb_model(params, seed=0):
+    return lgb.LGBMRegressor(objective="l1", subsample=0.8, subsample_freq=1, colsample_bytree=0.8,
+                             n_jobs=1, random_state=seed, verbose=-1, **params)
+
+
+def lgb_tune(region):
+    """Validation MAE (z space, mean over TUNE_H) of each grid entry on the main split; returns (best, scores)."""
     d = load(region)
     t_tr, t_va = origins("train")[::6], origins("val")[::6]
     Xtr, Xva = lgb_features(d, t_tr), lgb_features(d, t_va)
     a_tr, a_va = d["anchor"][t_tr].ravel(), d["anchor"][t_va].ravel()
-    ev = {s: origins(s) for s in ("val", "test")}
+    scores = []
+    for params in LGB_GRID:
+        err = []
+        for h in TUNE_H:
+            def xy(t, X, a):
+                ok = d["observed"][t + h].ravel() & ~np.isnan(a)
+                return X[ok], (to_z(d["pm"][t + h]).ravel() - a)[ok]
+            (xa, ya), (xb, yb) = xy(t_tr, Xtr, a_tr), xy(t_va, Xva, a_va)
+            m = lgb_model(params).fit(xa, ya, eval_set=[(xb, yb)], callbacks=[lgb.early_stopping(25, verbose=False)])
+            err.append(float(np.abs(m.predict(xb) - yb).mean()))
+        scores.append(float(np.mean(err)))
+        print(region, "lgb tune", params, round(scores[-1], 4), flush=True)
+    return LGB_GRID[int(np.argmin(scores))], scores
+
+
+def lgb_fit_predict(region, params=LGB_GRID[0], pre="", seed=0):
+    d = load(region)
+    t_tr, t_va = origins(pre + "train")[::6], origins(pre + "val")[::6]
+    Xtr, Xva = lgb_features(d, t_tr), lgb_features(d, t_va)
+    a_tr, a_va = d["anchor"][t_tr].ravel(), d["anchor"][t_va].ravel()
+    ev = {s: origins(s) for s in (pre + "val", pre + "test")}
     Xev = {s: lgb_features(d, t) for s, t in ev.items()}
     out = {s: np.zeros((len(t), d["X"].shape[1], HORIZON), np.float32) for s, t in ev.items()}
     for h in range(1, HORIZON + 1):
@@ -59,14 +92,12 @@ def lgb_fit_predict(region, seed=0):
             ok = d["observed"][t + h].ravel() & ~np.isnan(a)
             return X[ok], (y - a)[ok]
         (xa, ya), (xb, yb) = xy(t_tr, Xtr, a_tr), xy(t_va, Xva, a_va)
-        m = lgb.LGBMRegressor(objective="l1", n_estimators=200, learning_rate=0.12, num_leaves=63,
-                              min_child_samples=100, subsample=0.8, subsample_freq=1, colsample_bytree=0.8,
-                              n_jobs=1, random_state=seed, verbose=-1)
+        m = lgb_model(params, seed)
         m.fit(xa, ya, eval_set=[(xb, yb)], callbacks=[lgb.early_stopping(25, verbose=False)])
         for s, t in ev.items():
             dz = m.predict(Xev[s]).reshape(len(t), -1)
             out[s][:, :, h - 1] = from_z(d["anchor"][t] + dz)
-        print(region, "lgb h", h, "trees", m.best_iteration_, flush=True)
+        print(region, pre + "lgb h", h, "trees", m.best_iteration_, flush=True)
     return out
 
 
@@ -75,9 +106,10 @@ def main():
            "horizons_h": list(range(1, HORIZON + 1))}
     for region in REGIONS:
         d = load(region)
-        lg = lgb_fit_predict(region)
-        res[region] = {}
-        for split in ("val", "test"):
+        params, tune = lgb_tune(region)
+        lg = {**lgb_fit_predict(region, params), **lgb_fit_predict(region, params, "w")}
+        res[region] = {"lightgbm_params": params, "lightgbm_tuning": [dict(p, val_mae_z=s) for p, s in zip(LGB_GRID, tune)]}
+        for split in ("val", "test", "wval", "wtest"):
             t = origins(split)
             y, mask = targets(d, t), eval_mask(d, t)
             preds = {"persistence": persistence(d, t), "seasonal_naive": seasonal_naive(d, t),

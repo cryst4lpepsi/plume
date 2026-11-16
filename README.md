@@ -100,7 +100,7 @@ Requirements: Python 3.11+, Node 20+, about 30 GB of free disk for the data stag
 ```bash
 make setup     # Python venv and web dependencies
 make data      # download OpenAQ, EEA, ERA5, CAMS and fire extracts; clean; choose stations (about 1 h, network-bound)
-make train     # baselines and all graph-model runs (about 2.5 h on 4 CPU cores; safe to re-run after an interruption)
+make train     # baselines, tuning runs, then all graph-model runs (several hours on 4 CPU cores; safe to re-run after an interruption)
 make eval      # re-score everything, rewrite results/*.json, re-export the app data, verify it, refresh the tables
 make web       # dev server on http://localhost:5173
 make build     # static site in web/dist

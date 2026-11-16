@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 from .config import *
 from .data import load, eval_mask, targets, git_commit, haversine
-from .metrics import score, coverage
+from .metrics import score, coverage, add_skill
 from . import baselines as B
 
 PRED, RUNS, RES = Path("data/preds"), Path("data/runs"), Path("results")
@@ -37,10 +37,41 @@ def family(region, split, d, t, y, mask, pattern):
     return out
 
 
+def table(region, d, split, plume, sel=None):
+    """Baselines and one graph-model family on a split, optionally for a subset of stations (bool [N])."""
+    t = origins(split); y = np.nan_to_num(targets(d, t)); mask = eval_mask(d, t)
+    if sel is not None:
+        mask = mask & sel[None, :, None]
+    if mask.sum((0, 1)).min() == 0:
+        return None
+    models = {"persistence": score(np.nan_to_num(B.persistence(d, t)), y, mask),
+              "seasonal_naive": score(np.nan_to_num(B.seasonal_naive(d, t)), y, mask),
+              "cams": score(np.nan_to_num(B.cams(d, t)), y, mask)}
+    lg = load_pred(region, split, "lightgbm")
+    if lg is not None:
+        models["lightgbm"] = score(lg, y, mask)
+    fam = family(region, split, d, t, y, mask, plume)
+    if fam:
+        models["plume"] = agg(fam)
+    for m in models.values():
+        m.setdefault("mae_all", float(np.mean(m["mae"])))
+    return add_skill(models)
+
+
+def station_groups(region):
+    """Named subsets of a region's stations: India inside Asia, and the EEA station types in Europe."""
+    st = json.loads(Path(f"data/processed/{region}_stations.json").read_text())
+    if region == "asia":
+        return {"india": np.array([s["iso"] == "IN" for s in st])}
+    return {k: np.array([s.get("type") == k for s in st]) for k in ("background", "traffic", "industrial")}
+
+
 def main():
     meta = {"script": "ml/plume/evaluate.py", "commit": git_commit(), "units": "ug/m3", "horizons_h": list(range(1, HORIZON + 1)),
             "report_horizons_h": list(REPORT_H), "note": "MAE/RMSE of the P50 forecast; mean and sd over 3 seeds; all models scored on identical (origin, station, horizon) triples."}
     main_res, abl, cal, unseen, station = dict(meta), dict(meta), dict(meta), dict(meta), dict(meta)
+    winter = dict(meta, period="2025-12-01 to 2026-02-28 UTC", trained_on="2024-11-01 to 2025-08-31, validated on 2025-09-01 to 2025-11-30")
+    slices = dict(meta)
     for region in REGIONS:
         d = load(region); r = SHORT[region]
         split_res = {}
@@ -76,6 +107,12 @@ def main():
                 split_res[split]["plume"] = split_res[split][chosen]
         abl[region] = {split: {"none": split_res[split].get("ablation_none"), "dist": split_res[split].get("ablation_dist"),
                                "wind": split_res[split].get("plume_per_region")} for split in ("val", "test")}
+        # second evaluation (winter), and the same scores for named groups of stations
+        winter[region] = table(region, d, "wtest", r + "_winter_s{s}")
+        pat = {"plume_per_region": r + "_wind_s{s}", "plume_shared": "sh_wind_s{s}"}.get(chosen, "")
+        slices[region] = {k: {"stations": int(sel.sum()), "test": table(region, d, "test", pat, sel),
+                              "winter": table(region, d, "wtest", r + "_winter_s{s}", sel)}
+                          for k, sel in station_groups(region).items() if sel.any()}
         # calibration of the chosen model
         if chosen:
             pat = (r + "_wind_s{s}") if chosen == "plume_per_region" else "sh_wind_s{s}"
@@ -129,8 +166,11 @@ def main():
             unseen[region] = {"held_out": int(len(hold)), "held_out_with_neighbour_in_range": int(has_nb.sum()),
                               "coverage_p10_p90": coverage(p[..., 0], p[..., 2], y, mask), **res}
     RES.mkdir(exist_ok=True)
-    for name, obj in (("main", main_res), ("ablation", abl), ("calibration", cal), ("unseen", unseen), ("station_error", station)):
+    for name, obj in (("main", main_res), ("ablation", abl), ("calibration", cal), ("unseen", unseen), ("station_error", station),
+                      ("winter", winter), ("slices", slices)):
         (RES / f"{name}.json").write_text(json.dumps(obj))
+    if (RUNS / "tuning.json").exists():
+        (RES / "tuning.json").write_text((RUNS / "tuning.json").read_text())
     for region in REGIONS:
         print(region, "chosen:", main_res[region]["chosen"])
         for k, m in main_res[region]["test"].items():

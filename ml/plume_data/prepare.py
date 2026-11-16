@@ -14,7 +14,7 @@ RAW, OUT = Path("data/raw_hourly"), Path("data/processed")
 RAW_EEA = Path("data/raw_hourly_eea")
 OUT.mkdir(parents=True, exist_ok=True)
 NH = 730 * 24
-TARGET = 420
+TARGET = {"europe": 700, "asia": 420}
 FLAT_RUN = 12          # identical value for >= 12 consecutive hours => sensor fault
 SPIKE_RATIO = 10.0     # single hour > 10x rolling median => spike
 SPIKE_FLOOR = 5.0      # the median is floored at 5 ug/m3 so clean-air noise is not called a spike
@@ -135,7 +135,7 @@ def main():
         by = defaultdict(list)
         for c in ok:
             by[c["iso"]].append(c)
-        q = sqrt_quotas({k: len(v) for k, v in by.items()}, min(TARGET, len(ok)), POWER[reg])
+        q = sqrt_quotas({k: len(v) for k, v in by.items()}, min(TARGET[reg], len(ok)), POWER[reg])
         chosen = []
         for iso, v in by.items():
             idx = farthest_point([c["lat"] for c in v], [c["lon"] for c in v], q[iso], [c["coverage"] for c in v])

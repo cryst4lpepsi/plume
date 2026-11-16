@@ -13,6 +13,12 @@ NH = 730 * 24
 VAL_START = int((np.datetime64("2026-05-01T00") - T0) / np.timedelta64(1, "h"))
 TEST_START = int((np.datetime64("2026-08-01T00") - T0) / np.timedelta64(1, "h"))
 SPLITS = {"train": (0, VAL_START), "val": (VAL_START, TEST_START), "test": (TEST_START, NH)}
+# second evaluation on the polluted season: a model that has seen nothing after November 2025 is tested on
+# December 2025 to February 2026 (10 months train, 3 validation, 3 test)
+_h = lambda s: int((np.datetime64(s) - T0) / np.timedelta64(1, "h"))
+SPLITS.update({"wtrain": (0, _h("2025-09-01T00")), "wval": (_h("2025-09-01T00"), _h("2025-12-01T00")),
+               "wtest": (_h("2025-12-01T00"), _h("2026-03-01T00"))})
+SCHEMES = {"main": "", "winter": "w"}   # prefix of the split names each scheme uses
 # PM2.5 is modelled as z = log1p(ug/m3) - MU (fixed constants so both regions share one scale)
 MU = 2.5
 
