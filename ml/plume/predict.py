@@ -64,7 +64,7 @@ def main(argv=None):
     meta, d, weights = read(a.bundle)
     st = meta["stations"]
     if a.list is not None:
-        for i in find(st, a.list) if a.list else range(len(st)):
+        for i in find(st, a.list):
             print(f"{st[i]['id']:>12}  {st[i]['name']}  ({st[i]['city']}, {st[i]['iso']})")
         return
     if not a.station:
@@ -72,7 +72,7 @@ def main(argv=None):
     hits = find(st, a.station)
     if not hits:
         sys.exit(f"no station matches {a.station!r}; try --list")
-    if len(hits) > 1 and st[hits[0]]["name"].lower() != a.station.strip().lower():
+    if len(hits) > 1:
         print(f"{len(hits)} stations match {a.station!r}; showing the first. Use --list {a.station!r} and pass an id to choose.", file=sys.stderr)
     s = hits[0]
     T = d["X"].shape[0]

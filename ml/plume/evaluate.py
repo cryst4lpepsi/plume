@@ -37,8 +37,9 @@ def family(region, split, d, t, y, mask, pattern):
     return out
 
 
-def table(region, d, split, plume, sel=None):
-    """Baselines and one graph-model family on a split, optionally for a subset of stations (bool [N])."""
+def table(region, d, split, families, sel=None):
+    """Baselines plus graph-model families ({name: tag pattern}) on a split, optionally for a subset of
+    stations (bool [N]). None when the subset has nothing to score."""
     t = origins(split); y = np.nan_to_num(targets(d, t)); mask = eval_mask(d, t)
     if sel is not None:
         mask = mask & sel[None, :, None]
@@ -50,9 +51,10 @@ def table(region, d, split, plume, sel=None):
     lg = load_pred(region, split, "lightgbm")
     if lg is not None:
         models["lightgbm"] = score(lg, y, mask)
-    fam = family(region, split, d, t, y, mask, plume)
-    if fam:
-        models["plume"] = agg(fam)
+    for name, pattern in families.items():
+        fam = family(region, split, d, t, y, mask, pattern)
+        if fam:
+            models[name] = agg(fam)
     for m in models.values():
         m.setdefault("mae_all", float(np.mean(m["mae"])))
     return add_skill(models)
@@ -74,28 +76,9 @@ def main():
     slices = dict(meta)
     for region in REGIONS:
         d = load(region); r = SHORT[region]
-        split_res = {}
-        for split in ("val", "test"):
-            t = origins(split); y = np.nan_to_num(targets(d, t)); mask = eval_mask(d, t)
-            models = {"persistence": score(np.nan_to_num(B.persistence(d, t)), y, mask),
-                      "seasonal_naive": score(np.nan_to_num(B.seasonal_naive(d, t)), y, mask),
-                      "cams": score(np.nan_to_num(B.cams(d, t)), y, mask)}
-            lg = load_pred(region, split, "lightgbm")
-            if lg is not None:
-                models["lightgbm"] = score(lg, y, mask)
-            fam = {"plume_per_region": family(region, split, d, t, y, mask, r + "_wind_s{s}"),
-                   "plume_shared": family(region, split, d, t, y, mask, "sh_wind_s{s}"),
-                   "ablation_none": family(region, split, d, t, y, mask, r + "_none_s{s}"),
-                   "ablation_dist": family(region, split, d, t, y, mask, r + "_dist_s{s}"),
-                   "oracle_weather": family(region, split, d, t, y, mask, r + "_oracle_s{s}")}
-            for k, v in fam.items():
-                if v:
-                    models[k] = agg(v)
-            base = np.array(models["persistence"]["mae"])
-            for m in models.values():
-                m["skill"] = (1 - np.array(m["mae"]) / base).tolist()
-                m.setdefault("mae_all", float(np.mean(m["mae"])))
-            split_res[split] = models
+        families = {"plume_per_region": r + "_wind_s{s}", "plume_shared": "sh_wind_s{s}", "ablation_none": r + "_none_s{s}",
+                    "ablation_dist": r + "_dist_s{s}", "oracle_weather": r + "_oracle_s{s}"}
+        split_res = {split: table(region, d, split, families) for split in ("val", "test")}
         # shared vs per-region: decided on validation MAE averaged over horizons and seeds
         v = split_res["val"]
         cands = {k: v[k]["mae_all"] for k in ("plume_per_region", "plume_shared") if k in v and k in split_res["test"]}
@@ -108,10 +91,11 @@ def main():
         abl[region] = {split: {"none": split_res[split].get("ablation_none"), "dist": split_res[split].get("ablation_dist"),
                                "wind": split_res[split].get("plume_per_region")} for split in ("val", "test")}
         # second evaluation (winter), and the same scores for named groups of stations
-        winter[region] = table(region, d, "wtest", r + "_winter_s{s}")
-        pat = {"plume_per_region": r + "_wind_s{s}", "plume_shared": "sh_wind_s{s}"}.get(chosen, "")
-        slices[region] = {k: {"stations": int(sel.sum()), "test": table(region, d, "test", pat, sel),
-                              "winter": table(region, d, "wtest", r + "_winter_s{s}", sel)}
+        win = {"plume": r + "_winter_s{s}"}
+        winter[region] = table(region, d, "wtest", win)
+        best = {"plume": families[chosen]} if chosen else {}
+        slices[region] = {k: {"stations": int(sel.sum()), "test": table(region, d, "test", best, sel),
+                              "winter": table(region, d, "wtest", win, sel)}
                           for k, sel in station_groups(region).items() if sel.any()}
         # calibration of the chosen model
         if chosen:

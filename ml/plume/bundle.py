@@ -9,17 +9,11 @@ from pathlib import Path
 import numpy as np
 from .config import *
 from .data import load, git_commit
-from .export import A0, SHORT
+from .export import A0, STATION_KEYS, chosen_tag
 
 OUT = Path("data/bundle")
 SERIES = {"X": np.float16, "pm": np.float32, "observed": bool, "anchor": np.float32, "age": np.float32, "wind": np.float16}
 STATIC = ("lat", "lon", "src", "dst", "dist", "bear")
-STATION_KEYS = ("id", "name", "city", "iso", "country", "lat", "lon", "tz")
-
-
-def chosen_tag(region):
-    chosen = json.loads(Path("results/main.json").read_text())[region]["chosen"]
-    return f"{SHORT[region]}_wind_s0" if chosen == "plume_per_region" else "sh_wind_s0"
 
 
 def pack(region, tag, start=A0, out=OUT):
@@ -39,8 +33,9 @@ def pack(region, tag, start=A0, out=OUT):
 
 
 def main():
+    main_res = json.loads(Path("results/main.json").read_text())
     for region in REGIONS:
-        f = pack(region, chosen_tag(region))
+        f = pack(region, chosen_tag(region, main_res[region]["chosen"]))
         print(region, f, f"{f.stat().st_size / 1e6:.1f} MB")
 
 if __name__ == "__main__":

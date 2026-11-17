@@ -20,6 +20,12 @@ A0 = REPLAY_START - LEAD_IN
 SHORT = {"europe": "eu", "asia": "as"}
 LABEL = {"europe": "Europe", "asia": "Asia"}
 BASE_RES = {"europe": "CAMS Europe, 0.1 degree, hourly", "asia": "CAMS global, 0.4 degree, served hourly"}
+STATION_KEYS = ("id", "name", "city", "iso", "country", "lat", "lon", "tz")
+
+
+def chosen_tag(region, chosen):
+    """Seed-0 run of the model chosen on validation (per-region or shared)."""
+    return f"{SHORT[region]}_wind_s0" if chosen == "plume_per_region" else "sh_wind_s0"
 
 
 def main():
@@ -28,9 +34,9 @@ def main():
              "replay_days": REPLAY_DAYS, "issue_step_h": STEP}
     total = 0
     for region in REGIONS:
-        d = load(region); r = SHORT[region]
+        d = load(region)
         chosen = main_res[region]["chosen"]
-        tag = f"{r}_wind_s0" if chosen == "plume_per_region" else "sh_wind_s0"
+        tag = chosen_tag(region, chosen)
         cfg = json.loads(Path(f"data/runs/{tag}.json").read_text())
         st = json.loads(Path(f"data/processed/{region}_stations.json").read_text())
         n = len(st)
@@ -66,7 +72,7 @@ def main():
             c["major"] = k < 16
         index = dict(region=region, label=LABEL[region], t0=str((T0 + np.timedelta64(int(A0), "h")).astype("datetime64[s]")), hours=int(NH - A0), leadIn=LEAD_IN,
                      originStart=int(REPLAY_START - A0), originStep=STEP, origins=int(len(orig)), horizons=HORIZON,
-                     stations=[{k: s[k] for k in ("id", "name", "city", "iso", "country", "lat", "lon", "tz")} for s in st],
+                     stations=[{k: s[k] for k in STATION_KEYS} for s in st],
                      cities=cities, edges=[[int(a), int(b), round(float(km), 1)] for a, b, km in zip(d["src"], d["dst"], d["dist"])],
                      model=f"{chosen} ({tag})", baselineResolution=BASE_RES[region], units="ug/m3", commit=git_commit())
         (out / "index.json").write_text(json.dumps(index, ensure_ascii=False))

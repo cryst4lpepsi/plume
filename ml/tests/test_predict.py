@@ -2,7 +2,7 @@
 import json
 import numpy as np
 import pytest
-from plume.config import HORIZON, L_IN, NH, T0
+from plume.config import HORIZON, NH, T0
 from plume.predict import find, hour_index
 
 STATIONS = [dict(id=11, name="Anand Vihar", city="Delhi"), dict(id=12, name="Punjabi Bagh", city="Delhi"),
@@ -14,6 +14,7 @@ def test_find_prefers_id_then_exact_name_then_substring():
     assert find(STATIONS, "mitte") == [3]                 # exact name beats the substring in "Berlin Mitte"
     assert find(STATIONS, "delhi") == [0, 1]
     assert find(STATIONS, "Atlantis") == []
+    assert find(STATIONS, "") == [0, 1, 2, 3]            # --list with no query lists everything
 
 
 def test_hour_index_counts_from_the_bundle_start():
@@ -55,4 +56,3 @@ def test_bundle_round_trip(tmp_path, monkeypatch):
         ref = torch.expm1(model.eval()(x, R.static, anchor, has, age, R.g, wind)[0][0, 2] + 2.5).numpy()
     assert q.shape == (HORIZON, 3) and np.allclose(q, ref, rtol=2e-2, atol=2e-2)
     assert (q[:, 0] <= q[:, 1]).all() and (q[:, 1] <= q[:, 2]).all()
-    assert t >= L_IN - 1

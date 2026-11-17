@@ -57,9 +57,14 @@ const base = import.meta.env.BASE_URL + 'data/'
 const BINS = ['obs.f16', 'cams.f16', 'wind.i8', 'fc.f16', 'lgb.f16', 'att.u8'] as const
 
 /** Reads a response body while reporting bytes. `size` is null when the length is unknown (or compressed). */
-async function stream(p: string, onBytes: (got: number, size: number | null) => void): Promise<ArrayBuffer> {
+async function get(p: string): Promise<Response> {
   const r = await fetch(base + p)
   if (!r.ok) throw new Error(`Could not load ${p} (HTTP ${r.status}). Run "make export" to rebuild the data files.`)
+  return r
+}
+
+async function stream(p: string, onBytes: (got: number, size: number | null) => void): Promise<ArrayBuffer> {
+  const r = await get(p)
   const len = Number(r.headers.get('content-length'))
   const size = len > 0 && !r.headers.get('content-encoding') ? len : null
   if (!r.body) { const b = await r.arrayBuffer(); onBytes(b.byteLength, size); return b }
@@ -78,11 +83,7 @@ async function stream(p: string, onBytes: (got: number, size: number | null) => 
 
 /** Both regions, with download progress from 0 to 1 over the binary files (the bulk of the bytes). */
 export async function loadAll(onProgress: (f: number) => void = () => {}): Promise<Record<RegionKey, RegionData>> {
-  const idx = await Promise.all(REGIONS.map(async (region) => {
-    const r = await fetch(base + `${region}/index.json`)
-    if (!r.ok) throw new Error(`Could not load ${region}/index.json (HTTP ${r.status}). Run "make export" to rebuild the data files.`)
-    return (await r.json()) as RegionIndex
-  }))
+  const idx: RegionIndex[] = await Promise.all(REGIONS.map(async (region) => (await get(`${region}/index.json`)).json()))
   const files = REGIONS.flatMap((region) => BINS.map((f) => `${region}/${f}`))
   const got = files.map(() => 0), size: (number | null)[] = files.map(() => null), done = files.map(() => false)
   const report = () => {

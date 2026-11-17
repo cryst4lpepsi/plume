@@ -1,4 +1,4 @@
-import { createContext, lazy, Suspense, useContext, useEffect, useState } from 'react'
+import { createContext, lazy, Suspense, useContext, useEffect, useLayoutEffect, useState } from 'react'
 import { Route, Routes } from 'react-router-dom'
 import { MotionConfig } from 'framer-motion'
 import { loadAll } from './lib/data'
@@ -59,21 +59,21 @@ export default function App() {
   const [progress, setProgress] = useState(0)
   const [barFull, setBarFull] = useState(false)
   const [warm, setWarm] = useState(false)
-  const [booting, setBooting] = useState(true)
+  const booting = !(barFull && warm)
   useEffect(() => {
     loadTerminal(); loadMethods()   // fetch the other views' code meanwhile, so any route has its header ready
     loadAll(setProgress).then(setDs).catch((e) => setErr(String(e.message ?? e)))
   }, [])
   // the view is mounted, hidden, as soon as the data is in; wait for it to settle before handing over
   useEffect(() => { if (ds) whenSmooth().then(() => setWarm(true)) }, [ds])
-  useEffect(() => {
-    if (!barFull || !warm) return
-    // first entrance only: the rest of the view fades in while the wordmark travels to the header
+  // first entrance only: the rest of the view fades in while the wordmark travels to the header. A layout
+  // effect, so the attribute is set before the revealed view is first painted.
+  useLayoutEffect(() => {
+    if (booting) return
     document.documentElement.dataset.enter = ''
     const t = setTimeout(() => delete document.documentElement.dataset.enter, 1600)
-    setBooting(false)
     return () => clearTimeout(t)
-  }, [barFull, warm])
+  }, [booting])
   useClock(ds)
   return (
     <MotionConfig reducedMotion="user">

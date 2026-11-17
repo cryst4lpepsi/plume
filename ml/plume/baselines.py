@@ -57,46 +57,43 @@ def lgb_model(params, seed=0):
                              n_jobs=1, random_state=seed, verbose=-1, **params)
 
 
-def lgb_tune(region):
-    """Validation MAE (z space, mean over TUNE_H) of each grid entry on the main split; returns (best, scores)."""
-    d = load(region)
-    t_tr, t_va = origins("train")[::6], origins("val")[::6]
-    Xtr, Xva = lgb_features(d, t_tr), lgb_features(d, t_va)
-    a_tr, a_va = d["anchor"][t_tr].ravel(), d["anchor"][t_va].ravel()
+def lgb_split(d, pre=""):
+    """(features, anchor, origins) for the training and validation origins of a scheme, every 6th origin."""
+    return [(lgb_features(d, t), d["anchor"][t].ravel(), t) for t in (origins(pre + "train")[::6], origins(pre + "val")[::6])]
+
+
+def lgb_fit(d, split, h, params, seed=0):
+    """One horizon: predicts the change from the anchor in z space. Returns the model and the validation set."""
+    def xy(X, a, t):
+        ok = d["observed"][t + h].ravel() & ~np.isnan(a)
+        return X[ok], (to_z(d["pm"][t + h]).ravel() - a)[ok]
+    (xa, ya), (xb, yb) = xy(*split[0]), xy(*split[1])
+    m = lgb_model(params, seed).fit(xa, ya, eval_set=[(xb, yb)], callbacks=[lgb.early_stopping(25, verbose=False)])
+    return m, xb, yb
+
+
+def lgb_tune(region, d, split):
+    """Validation MAE (z space, mean over TUNE_H) of each grid entry; returns (best, scores)."""
     scores = []
     for params in LGB_GRID:
         err = []
         for h in TUNE_H:
-            def xy(t, X, a):
-                ok = d["observed"][t + h].ravel() & ~np.isnan(a)
-                return X[ok], (to_z(d["pm"][t + h]).ravel() - a)[ok]
-            (xa, ya), (xb, yb) = xy(t_tr, Xtr, a_tr), xy(t_va, Xva, a_va)
-            m = lgb_model(params).fit(xa, ya, eval_set=[(xb, yb)], callbacks=[lgb.early_stopping(25, verbose=False)])
+            m, xb, yb = lgb_fit(d, split, h, params)
             err.append(float(np.abs(m.predict(xb) - yb).mean()))
         scores.append(float(np.mean(err)))
         print(region, "lgb tune", params, round(scores[-1], 4), flush=True)
     return LGB_GRID[int(np.argmin(scores))], scores
 
 
-def lgb_fit_predict(region, params=LGB_GRID[0], pre="", seed=0):
-    d = load(region)
-    t_tr, t_va = origins(pre + "train")[::6], origins(pre + "val")[::6]
-    Xtr, Xva = lgb_features(d, t_tr), lgb_features(d, t_va)
-    a_tr, a_va = d["anchor"][t_tr].ravel(), d["anchor"][t_va].ravel()
+def lgb_fit_predict(region, d, params, pre="", split=None, seed=0):
+    split = split or lgb_split(d, pre)
     ev = {s: origins(s) for s in (pre + "val", pre + "test")}
     Xev = {s: lgb_features(d, t) for s, t in ev.items()}
     out = {s: np.zeros((len(t), d["X"].shape[1], HORIZON), np.float32) for s, t in ev.items()}
     for h in range(1, HORIZON + 1):
-        def xy(t, X, a):
-            y = to_z(d["pm"][t + h]).ravel()
-            ok = d["observed"][t + h].ravel() & ~np.isnan(a)
-            return X[ok], (y - a)[ok]
-        (xa, ya), (xb, yb) = xy(t_tr, Xtr, a_tr), xy(t_va, Xva, a_va)
-        m = lgb_model(params, seed)
-        m.fit(xa, ya, eval_set=[(xb, yb)], callbacks=[lgb.early_stopping(25, verbose=False)])
+        m, _, _ = lgb_fit(d, split, h, params, seed)
         for s, t in ev.items():
-            dz = m.predict(Xev[s]).reshape(len(t), -1)
-            out[s][:, :, h - 1] = from_z(d["anchor"][t] + dz)
+            out[s][:, :, h - 1] = from_z(d["anchor"][t] + m.predict(Xev[s]).reshape(len(t), -1))
         print(region, pre + "lgb h", h, "trees", m.best_iteration_, flush=True)
     return out
 
@@ -106,8 +103,9 @@ def main():
            "horizons_h": list(range(1, HORIZON + 1))}
     for region in REGIONS:
         d = load(region)
-        params, tune = lgb_tune(region)
-        lg = {**lgb_fit_predict(region, params), **lgb_fit_predict(region, params, "w")}
+        main_split = lgb_split(d)
+        params, tune = lgb_tune(region, d, main_split)
+        lg = {**lgb_fit_predict(region, d, params, split=main_split), **lgb_fit_predict(region, d, params, "w")}
         res[region] = {"lightgbm_params": params, "lightgbm_tuning": [dict(p, val_mae_z=s) for p, s in zip(LGB_GRID, tune)]}
         for split in ("val", "test", "wval", "wtest"):
             t = origins(split)
