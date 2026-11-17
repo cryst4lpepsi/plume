@@ -12,6 +12,7 @@ import { Delta, IconPause, IconPlay, LensNav, utc } from '../ui/bits'
 import { StationDetail } from '../ui/Drawer'
 import { Timeline } from '../ui/Timeline'
 import { norm, searchStations, useStationIndex } from '../ui/Search'
+import { Wordmark } from '../ui/Loader'
 import mainResults from '@results/main.json'
 
 type Scores = Record<string, { mae: number[]; rmse: number[]; skill: number[]; mae_sd?: number[] }>
@@ -237,7 +238,7 @@ export default function TerminalView() {
   return (
     <main className="term">
       <header className="term-head">
-        <h1>Plume<span>terminal</span></h1>
+        <h1><Wordmark /><span>terminal</span></h1>
         <LensNav />
         <div className="term-clock">
           <button type="button" className="icon-btn" aria-label={playing ? 'Pause replay' : 'Play replay'} onClick={() => setState({ playing: !playing })}>{playing ? <IconPause /> : <IconPlay />}</button>

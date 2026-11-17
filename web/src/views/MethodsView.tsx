@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { LensNav } from '../ui/bits'
+import { Wordmark } from '../ui/Loader'
 import { HorizonChart, type Series } from '../charts/HorizonChart'
 import main from '@results/main.json'
 import ablation from '@results/ablation.json'
@@ -97,7 +98,7 @@ export default function MethodsView() {
   }
   return (
     <div className="methods">
-      <header className="m-top"><Link to="/" className="m-mark">Plume</Link><LensNav /></header>
+      <header className="m-top"><Link to="/" className="m-mark"><Wordmark /></Link><LensNav /></header>
       <article>
         <header className="m-head">
           <h1>How Plume works, and how well</h1>

@@ -11,6 +11,7 @@ import { Timeline } from '../ui/Timeline'
 import { Legend } from '../ui/Legend'
 import { Drawer } from '../ui/Drawer'
 import { StationSearch } from '../ui/Search'
+import { Wordmark } from '../ui/Loader'
 
 const MODES: { value: Mode; label: string; title: string }[] = [
   { value: 'observed', label: 'Observed', title: 'Measured PM2.5 at the replay time' },
@@ -38,7 +39,7 @@ export function GlobeView() {
     <main className="globe-view">
       <Globe ds={ds} onHover={onHover} />
       <header className="g-title">
-        <h1>Plume</h1>
+        <h1><Wordmark /></h1>
         <p>PM2.5 across Europe and Asia, forecast 24 hours ahead by a graph of monitoring stations.</p>
       </header>
       <div className="g-controls">

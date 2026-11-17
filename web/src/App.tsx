@@ -1,12 +1,29 @@
 import { createContext, lazy, Suspense, useContext, useEffect, useState } from 'react'
 import { Route, Routes } from 'react-router-dom'
-import { loadRegion } from './lib/data'
+import { MotionConfig } from 'framer-motion'
+import { loadAll } from './lib/data'
 import { type DataSet, clockRange } from './lib/derive'
 import { getState, setState } from './lib/store'
 import { GlobeView } from './views/GlobeView'
+import { BootCtx, Loader } from './ui/Loader'
 
-const TerminalView = lazy(() => import('./views/TerminalView'))
-const MethodsView = lazy(() => import('./views/MethodsView'))
+const loadTerminal = () => import('./views/TerminalView')
+const loadMethods = () => import('./views/MethodsView')
+const TerminalView = lazy(loadTerminal)
+const MethodsView = lazy(loadMethods)
+
+/** Resolves once the page draws frames steadily (8 in a row under 25 ms), or after `cap` ms. The globe's first
+ * frames compile shaders and build buffers; the wordmark should not start moving while that blocks the page. */
+function whenSmooth(cap = 2500): Promise<void> {
+  return new Promise((res) => {
+    const t0 = performance.now(); let last = t0, run = 0
+    const tick = (t: number) => {
+      run = t - last < 25 ? run + 1 : 0; last = t
+      if (run >= 8 || t - t0 > cap) res(); else requestAnimationFrame(tick)
+    }
+    requestAnimationFrame(tick)
+  })
+}
 
 const DataCtx = createContext<DataSet | null>(null)
 export const useData = () => useContext(DataCtx)!
@@ -39,23 +56,46 @@ function useClock(ds: DataSet | null) {
 export default function App() {
   const [ds, setDs] = useState<DataSet | null>(null)
   const [err, setErr] = useState<string | null>(null)
+  const [progress, setProgress] = useState(0)
+  const [barFull, setBarFull] = useState(false)
+  const [warm, setWarm] = useState(false)
+  const [booting, setBooting] = useState(true)
   useEffect(() => {
-    Promise.all([loadRegion('europe'), loadRegion('asia')])
-      .then(([europe, asia]) => setDs({ europe, asia }))
-      .catch((e) => setErr(String(e.message ?? e)))
+    loadTerminal(); loadMethods()   // fetch the other views' code meanwhile, so any route has its header ready
+    loadAll(setProgress).then(setDs).catch((e) => setErr(String(e.message ?? e)))
   }, [])
+  // the view is mounted, hidden, as soon as the data is in; wait for it to settle before handing over
+  useEffect(() => { if (ds) whenSmooth().then(() => setWarm(true)) }, [ds])
+  useEffect(() => {
+    if (!barFull || !warm) return
+    // first entrance only: the rest of the view fades in while the wordmark travels to the header
+    document.documentElement.dataset.enter = ''
+    const t = setTimeout(() => delete document.documentElement.dataset.enter, 1600)
+    setBooting(false)
+    return () => clearTimeout(t)
+  }, [barFull, warm])
   useClock(ds)
-  if (err) return <main className="boot"><h1>Plume</h1><p role="alert">{err}</p></main>
-  if (!ds) return <main className="boot"><h1>Plume</h1><p aria-live="polite">Loading the replay: observations, forecasts and baselines for about 840 stations.</p></main>
   return (
-    <DataCtx.Provider value={ds}>
-      <Suspense fallback={<main className="boot"><h1>Plume</h1><p>Loading view.</p></main>}>
-        <Routes>
-          <Route path="/" element={<GlobeView />} />
-          <Route path="/terminal" element={<TerminalView />} />
-          <Route path="/methods" element={<MethodsView />} />
-        </Routes>
-      </Suspense>
-    </DataCtx.Provider>
+    <MotionConfig reducedMotion="user">
+      <BootCtx.Provider value={booting}>
+        {ds && (
+          <div className={booting ? 'app app-booting' : 'app'} aria-hidden={booting || undefined}>
+            <DataCtx.Provider value={ds}>
+              <Suspense fallback={<main className="boot"><h1>Plume</h1><p>Loading view.</p></main>}>
+                <Routes>
+                  <Route path="/" element={<GlobeView />} />
+                  <Route path="/terminal" element={<TerminalView />} />
+                  <Route path="/methods" element={<MethodsView />} />
+                </Routes>
+              </Suspense>
+            </DataCtx.Provider>
+          </div>
+        )}
+        {booting && (
+          // the bar stops short of the end until the view has settled, so it never sits full while nothing happens
+          <Loader progress={warm ? 1 : Math.min(progress, 0.96)} error={err} onDone={() => setBarFull(true)} />
+        )}
+      </BootCtx.Provider>
+    </MotionConfig>
   )
 }

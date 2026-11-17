@@ -54,19 +54,55 @@ export function latLonToVec(lat: number, lon: number, r = 1): [number, number, n
 }
 
 const base = import.meta.env.BASE_URL + 'data/'
-const bin = async (p: string) => {
+const BINS = ['obs.f16', 'cams.f16', 'wind.i8', 'fc.f16', 'lgb.f16', 'att.u8'] as const
+
+/** Reads a response body while reporting bytes. `size` is null when the length is unknown (or compressed). */
+async function stream(p: string, onBytes: (got: number, size: number | null) => void): Promise<ArrayBuffer> {
   const r = await fetch(base + p)
   if (!r.ok) throw new Error(`Could not load ${p} (HTTP ${r.status}). Run "make export" to rebuild the data files.`)
-  return r.arrayBuffer()
+  const len = Number(r.headers.get('content-length'))
+  const size = len > 0 && !r.headers.get('content-encoding') ? len : null
+  if (!r.body) { const b = await r.arrayBuffer(); onBytes(b.byteLength, size); return b }
+  const reader = r.body.getReader(), parts: Uint8Array[] = []
+  let got = 0
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) break
+    parts.push(value); got += value.byteLength; onBytes(got, size)
+  }
+  const out = new Uint8Array(got)
+  let at = 0
+  for (const v of parts) { out.set(v, at); at += v.byteLength }
+  return out.buffer
 }
 
-export async function loadRegion(region: RegionKey): Promise<RegionData> {
-  const r = await fetch(base + `${region}/index.json`)
-  if (!r.ok) throw new Error(`Could not load ${region}/index.json (HTTP ${r.status}). Run "make export" to rebuild the data files.`)
-  const idx: RegionIndex = await r.json()
-  const [obs, cams, wind, fc, lgb, att] = await Promise.all(
-    ['obs.f16', 'cams.f16', 'wind.i8', 'fc.f16', 'lgb.f16', 'att.u8'].map((f) => bin(`${region}/${f}`)),
-  )
+/** Both regions, with download progress from 0 to 1 over the binary files (the bulk of the bytes). */
+export async function loadAll(onProgress: (f: number) => void = () => {}): Promise<Record<RegionKey, RegionData>> {
+  const idx = await Promise.all(REGIONS.map(async (region) => {
+    const r = await fetch(base + `${region}/index.json`)
+    if (!r.ok) throw new Error(`Could not load ${region}/index.json (HTTP ${r.status}). Run "make export" to rebuild the data files.`)
+    return (await r.json()) as RegionIndex
+  }))
+  const files = REGIONS.flatMap((region) => BINS.map((f) => `${region}/${f}`))
+  const got = files.map(() => 0), size: (number | null)[] = files.map(() => null), done = files.map(() => false)
+  const report = () => {
+    const known = size.filter((s): s is number => s != null)
+    const avg = known.length ? known.reduce((a, b) => a + b, 0) / known.length : 1
+    let num = 0, den = 0
+    files.forEach((_, i) => { const w = size[i] ?? avg; den += w; num += size[i] != null ? Math.min(got[i], w) : done[i] ? w : 0 })
+    onProgress(den ? num / den : 0)
+  }
+  const bufs = await Promise.all(files.map((p, i) => stream(p, (g, s) => { got[i] = g; size[i] = s; report() }).then((b) => { done[i] = true; report(); return b })))
+  const out = {} as Record<RegionKey, RegionData>
+  REGIONS.forEach((region, k) => {
+    const [obs, cams, wind, fc, lgb, att] = bufs.slice(k * BINS.length, (k + 1) * BINS.length)
+    out[region] = build(idx[k], { obs, cams, wind, fc, lgb, att })
+  })
+  return out
+}
+
+function build(idx: RegionIndex, b: Record<'obs' | 'cams' | 'wind' | 'fc' | 'lgb' | 'att', ArrayBuffer>): RegionData {
+  const { obs, cams, wind, fc, lgb, att } = b
   const n = idx.stations.length
   const pos = new Float32Array(n * 3)
   idx.stations.forEach((s, i) => pos.set(latLonToVec(s.lat, s.lon), i * 3))

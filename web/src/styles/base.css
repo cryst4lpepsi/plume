@@ -71,3 +71,19 @@ button { cursor: pointer; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 120ms !important; transition-property: opacity, color, background-color, border-color !important; }
 }
+
+/* boot screen and first entrance */
+.plume-word { display: inline-block; }
+.loader { position: fixed; inset: 0; display: grid; place-items: center; background: var(--ink-0); }
+.loader-inner { display: grid; justify-items: center; gap: var(--s-5); padding: 0 var(--s-4); }
+.loader h1 { font-family: var(--font-display); font-weight: var(--display-weight, 500); font-stretch: var(--display-stretch, 100%); font-size: calc(var(--t-5) * 1.6); line-height: 0.95; letter-spacing: -0.02em; font-variation-settings: 'opsz' 72; }
+.loader-bar { width: 132px; height: 2px; background: var(--ink-2); border-radius: 1px; overflow: hidden; }
+.loader-bar span { display: block; height: 100%; background: var(--accent); transform-origin: left center; }
+.loader-err { color: var(--fg-2); max-width: 46ch; text-align: center; }
+@keyframes enter-fade { from { opacity: 0; } }
+[data-enter] main > :not(:has(.plume-word)),
+[data-enter] main > :has(.plume-word) > :not(:has(.plume-word)):not(.plume-word),
+[data-enter] h1:has(.plume-word) > :not(.plume-word) { animation: enter-fade 900ms var(--ease-out) 250ms both; }
+@media (prefers-reduced-motion: reduce) { [data-enter] * { animation: none !important; } }
+.loader { z-index: 100; }
+.app-booting { opacity: 0; pointer-events: none; }
