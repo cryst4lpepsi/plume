@@ -350,7 +350,7 @@ The graph-model rows above are the mean ± standard deviation over seeds 0, 1 an
   average compared with a point; the two regions use different CAMS products.
 - Low-cost sensors and reference monitors are mixed and cannot be told apart.
 - Machine romanisation of Japanese, Korean, Chinese and Thai station names is rough.
-- Frame rate could not be measured on real graphics hardware; see Verification.
+- Frame rate was measured on one laptop GPU only (an RTX 3050 Ti); slower integrated graphics are untested. See Verification.
 - City labels come from the nearest GeoNames city, so a station near a border can carry a city from the
   other side (the watchlist shows "Shenzhen HK" for a Hong Kong station close to Shenzhen).
 
@@ -362,7 +362,7 @@ The graph-model rows above are the mean ± standard deviation over seeds 0, 1 an
 | Numbers in the app | The Methods page and the Terminal scoreboard import `results/*.json` at build time; no metric is typed into the interface. |
 | Screenshots | `node qa/screens.cjs` writes all 7 views at 1440, 1024 and 390 px to `docs/screenshots/` (21 files), with no page errors. Each was looked at. Fixed as a result: scoreboard clipped at 1024 px, sideways overflow on the mobile terminal, chart labels colliding, table captions cut off on mobile. |
 | Command bar | `node qa/commands.cjs`: every command, a typo ("MOVRS" suggests MOVERS), an unknown station and an unknown city behave as designed; history, autocomplete and number-key focus work. |
-| Frame rate | `node qa/fps.cjs` → `results/frame_rate.json`: 1.22 frames per second in default mode and 1.49 in low-power mode at 1440×900. **This is Chromium's software renderer (SwiftShader) on a CPU with no GPU**, so it says nothing useful about a visitor's machine. Performance on real hardware is untested. The app switches itself to low-power mode when the average frame takes longer than 28 ms. |
+| Frame rate | `node qa/fps.cjs` → `results/frame_rate.json`: 1.22 frames per second in default mode and 1.49 in low-power mode at 1440×900. **This is Chromium's software renderer (SwiftShader) on a CPU with no GPU**, so it says nothing useful about a visitor's machine. On a laptop GPU (`node qa/fps.cjs --gpu --hz 144` → `results/frame_rate_gpu.json`, NVIDIA GeForce RTX 3050 Ti, Chrome, Direct3D 11) the globe runs at 142 frames per second in both modes, which is the 144 Hz display's limit: it keeps up with the screen, and its headroom beyond that is not measured. The app switches itself to low-power mode when the average frame takes longer than 28 ms. |
 | Colour and contrast | `ml/tools/cvd_check.py` and `ml/tools/contrast_check.py` write `results/colour_check.json` and `results/contrast_check.json`. |
 | Design review | Done by hand from the screenshots at all three widths. |
 | Repository hygiene | No keys, raw data or model checkpoints are committed. Largest committed file: 13 MB (`web/public/data/asia/fc.f16`). |

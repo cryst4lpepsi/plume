@@ -92,3 +92,4 @@ Notes behind the scores:
 - **Unseen-station experiment ran with one seed.** Three seeds were budgeted for the main model and the ablation only.
 - **Methods screenshots are stitched from viewport captures.** Software WebGL in the container wraps a single capture taller than 8,192 px.
 - **Frame rate is reported as measured under software rendering**, labelled as such, because no GPU is available here.
+- **A second frame-rate measurement on a real GPU** (`qa/fps.cjs --gpu`, a laptop RTX 3050 Ti at 144 Hz) was added later. It uses the installed Chrome in a visible window, because headless Chromium falls back to software rendering. The browser caps frames at the display rate, so the result shows the globe keeps up with a 144 Hz screen, not its ceiling.
