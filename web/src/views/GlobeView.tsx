@@ -18,7 +18,7 @@ const MODES: { value: Mode; label: string; title: string }[] = [
   { value: 'error', label: 'Error', title: 'How far the forecast was from what was measured' },
   { value: 'influence', label: 'Influence', title: 'Which stations the model is listening to' },
 ]
-const REGION_OPTS: { value: RegionView; label: string }[] = [{ value: 'europe', label: 'Europe' }, { value: 'asia', label: 'Asia' }, { value: 'both', label: 'Both' }]
+const REGION_OPTS: { value: RegionView; label: string }[] = [{ value: 'europe', label: 'Europe' }, { value: 'asia', label: 'Asia' }, { value: 'india', label: 'India' }, { value: 'both', label: 'Both' }]
 const MODE_NOTE: Record<Mode, (h: number) => string> = {
   observed: () => 'Measured values at the replay time. Areas far from any station stay dark.',
   forecast: (h) => `Median (P50) forecast for ${h} h after the replay time, from the latest 6-hourly issue.`,

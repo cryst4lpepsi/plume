@@ -3,7 +3,7 @@ import { scaleLinear } from 'd3-scale'
 import { line, area } from 'd3-shape'
 import { useData } from '../App'
 import { REGIONS, hourToDate, median, obsAt, originIndex, originHour, fcAt } from '../lib/data'
-import { clockRange, inView } from '../lib/derive'
+import { clockRange, inView, stationInView } from '../lib/derive'
 import { setState, useStore, useHour } from '../lib/store'
 import { useSize } from '../lib/useSize'
 import { IconPause, IconPlay, utc } from './bits'
@@ -22,7 +22,7 @@ export function Timeline({ compact }: { compact?: boolean }) {
     const out: [number, number][] = []
     for (let t = min - 24; t <= max + 24; t++) {
       const v: number[] = []
-      for (const r of REGIONS) if (inView(view, r)) for (let s = 0; s < ds[r].n; s++) v.push(obsAt(ds[r], t, s))
+      for (const r of REGIONS) if (inView(view, r)) for (let s = 0; s < ds[r].n; s++) if (stationInView(view, ds[r], s)) v.push(obsAt(ds[r], t, s))
       out.push([t, median(v)])
     }
     return out
@@ -33,7 +33,7 @@ export function Timeline({ compact }: { compact?: boolean }) {
     const oh = originHour(ds.europe, o)
     for (let k = 1; k <= 24; k++) {
       const q: number[][] = [[], [], []]
-      for (const r of REGIONS) if (inView(view, r)) for (let s = 0; s < ds[r].n; s++) for (let j = 0; j < 3; j++) q[j].push(fcAt(ds[r], o, s, k, j))
+      for (const r of REGIONS) if (inView(view, r)) for (let s = 0; s < ds[r].n; s++) if (stationInView(view, ds[r], s)) for (let j = 0; j < 3; j++) q[j].push(fcAt(ds[r], o, s, k, j))
       out.push({ t: oh + k, p10: median(q[0]), p50: median(q[1]), p90: median(q[2]) })
     }
     return out

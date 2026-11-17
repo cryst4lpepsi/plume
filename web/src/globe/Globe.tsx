@@ -5,7 +5,7 @@ import { EffectComposer, Bloom } from '@react-three/postprocessing'
 import * as THREE from 'three'
 import { BANDS, oklchToSrgb8, rampColor } from '../lib/pm'
 import { REGIONS, latLonToVec, originIndex, type RegionKey } from '../lib/data'
-import { type DataSet, stationValue, inView } from '../lib/derive'
+import { type DataSet, stationValue, inView, stationInView } from '../lib/derive'
 import { getState, setState, useStore, useHour, QA } from '../lib/store'
 import * as S from './shaders'
 
@@ -79,7 +79,7 @@ function fillValues(ds: DataSet, sh: Shared, hour: number, out: Float32Array, st
   for (const r of REGIONS) {
     const d = ds[r], off = sh.offset[r], show = inView(region, r)
     for (let s = 0; s < d.n; s++) {
-      const v = show ? stationValue(d, s, hour, mode, horizon) : NaN
+      const v = show && stationInView(region, d, s) ? stationValue(d, s, hour, mode, horizon) : NaN
       out[(off + s) * stride + at] = Number.isNaN(v) ? -1 : v
     }
   }
@@ -203,6 +203,7 @@ function Stations({ ds, sh, size = 5 }: { ds: DataSet; sh: Shared; size?: number
     fillValues(ds, sh, hour, a.array as Float32Array, 1, 0)
     // hidden regions: push far negative so the shader can drop them entirely
     for (const r of REGIONS) if (!inView(region, r)) (a.array as Float32Array).fill(-2, sh.offset[r], sh.offset[r] + ds[r].n)
+      else for (let s = 0; s < ds[r].n; s++) if (!stationInView(region, ds[r], s)) (a.array as Float32Array)[sh.offset[r] + s] = -2
     a.needsUpdate = true
     mat.uniforms.uErr.value = mode === 'error' ? 1 : 0
   }, [hour, mode, horizon, region, ds, sh, geo, mat])
@@ -259,6 +260,7 @@ function Arcs({ ds, sh }: { ds: DataSet; sh: Shared }) {
       // draw the 260 strongest edges of this issue; with a station selected, its own incoming edges always show
       const cut = Array.from(row).sort((p, q) => q - p)[Math.min(E - 1, 260)]
       for (let e = 0; e < E; e++) {
+        if (!stationInView(region, d, d.edges[e][1])) continue   // only arcs into stations on show
         const mine = sel && sel.region === r && d.edges[e][1] === sel.station
         if (row[e] < cut && !mine) continue
         let v = row[e] / 255
@@ -288,7 +290,7 @@ function Arcs({ ds, sh }: { ds: DataSet; sh: Shared }) {
 }
 
 // ---- camera ----------------------------------------------------------------------------------
-const VIEW: Record<string, [number, number, number]> = { europe: [47, 12, 2.7], asia: [27, 104, 3.1], both: [36, 62, 4.5] }
+const VIEW: Record<string, [number, number, number]> = { europe: [47, 12, 2.7], asia: [27, 104, 3.1], both: [36, 62, 4.5], india: [22, 79, 2.3] }
 function Rig({ ds, sh, onHover }: { ds: DataSet; sh: Shared; onHover: (h: { region: RegionKey; station: number; x: number; y: number } | null) => void }) {
   const { camera, gl, size } = useThree()
   const ctl = useRef<any>(null)
@@ -340,7 +342,7 @@ function Rig({ ds, sh, onHover }: { ds: DataSet; sh: Shared; onHover: (h: { regi
       let best = -1, bd = 12 * 12
       for (let i = 0; i < sh.n; i++) {
         const r: RegionKey = i < sh.offset.asia ? 'europe' : 'asia'
-        if (!inView(view, r)) continue
+        if (!inView(view, r) || !stationInView(view, ds[r], i - sh.offset[r])) continue
         v.set(sh.pos[i * 3], sh.pos[i * 3 + 1], sh.pos[i * 3 + 2])
         if (v.dot(cam) < 0.15) continue
         v.project(camera)

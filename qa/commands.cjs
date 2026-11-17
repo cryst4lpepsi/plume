@@ -6,7 +6,7 @@ const { chromium } = require('playwright')
   await page.goto('http://127.0.0.1:5173/?qa=5#/terminal')
   await page.waitForSelector('#cmd-in', { timeout: 60000 })
   await page.waitForTimeout(2500)
-  const cmds = ['HELP', 'WATCH', 'MOVERS', 'ALERTS', 'SCORE', 'COMPARE', 'DETAIL', 'HORIZON 12', 'HORIZON 40', 'HORIZON', 'REGION ASIA', 'REGION MARS', 'REGION BOTH',
+  const cmds = ['HELP', 'WATCH', 'MOVERS', 'ALERTS', 'SCORE', 'COMPARE', 'DETAIL', 'HORIZON 12', 'HORIZON 40', 'HORIZON', 'REGION ASIA', 'REGION INDIA', 'REGION MARS', 'REGION BOTH',
     'PAUSE', 'PLAY', 'PAUSE', 'PIN Warsaw', 'PIN Warsaw', 'UNPIN Warsaw', 'UNPIN Atlantis', 'Seoul', 'berlin', 'MOVRS', 'ALERT', 'Xyzzyville', 'help']
   let fail = 0
   for (const c of cmds) {

@@ -5,7 +5,7 @@ import { line } from 'd3-shape'
 import { useData } from '../App'
 import { MiniGlobe } from '../globe/Globe'
 import { REGIONS, hourToDate, obsAt, originHour, originIndex, type RegionKey } from '../lib/data'
-import { alerts, cityRows, regionSummary, errorOrigin, stationValue, type CityRow, type DataSet } from '../lib/derive'
+import { alerts, cityRows, regionSummary, errorOrigin, REGION_NAME, stationValue, type CityRow, type DataSet } from '../lib/derive'
 import { getState, setState, useHour, useStore, type RegionView } from '../lib/store'
 import { bandText as bandVar, fmt } from '../lib/pm'
 import { Delta, IconPause, IconPlay, LensNav, utc } from '../ui/bits'
@@ -66,7 +66,7 @@ function usePins(rows: CityRow[]) {
 const COMMANDS: [string, string][] = [
   ['WATCH', 'Jump to the watchlist'], ['MOVERS', 'Jump to movers'], ['ALERTS', 'Jump to the alerts feed'], ['SCORE', 'Jump to the scoreboard'],
   ['COMPARE', 'Jump to region compare'], ['DETAIL', 'Jump to the detail panel'], ['HORIZON <1-24>', 'Set the forecast horizon in hours, e.g. HORIZON 12'],
-  ['REGION <EUROPE|ASIA|BOTH>', 'Limit movers, alerts and the mini globe to a region'], ['PIN <city>', 'Add a city to the watchlist'], ['UNPIN <city>', 'Remove a city from the watchlist'],
+  ['REGION <EUROPE|ASIA|INDIA|BOTH>', 'Limit movers, alerts and the mini globe to a region'], ['PIN <city>', 'Add a city to the watchlist'], ['UNPIN <city>', 'Remove a city from the watchlist'],
   ['PLAY', 'Run the replay clock'], ['PAUSE', 'Stop the replay clock'], ['GLOBE', 'Switch to the globe'], ['METHODS', 'Open the methods page'], ['HELP', 'Show this list'],
   ['<station or city>', 'Type any station or city name to select it'],
 ]
@@ -131,9 +131,9 @@ function CommandBar({ rows, pins, setPins }: { rows: CityRow[]; pins: string[]; 
       setState({ horizon: n }); return ok(`Horizon set to ${n} h. Scoreboard, watchlist and movers now use it.`)
     }
     if (verb === 'REGION') {
-      const m: Record<string, RegionView> = { EUROPE: 'europe', EU: 'europe', ASIA: 'asia', BOTH: 'both', ALL: 'both' }
-      if (!m[arg]) return bad(`REGION takes EUROPE, ASIA or BOTH. Got “${arg || 'nothing'}”.`)
-      setState({ region: m[arg] }); return ok(`Region set to ${arg === 'EU' ? 'EUROPE' : arg === 'ALL' ? 'BOTH' : arg}.`)
+      const m: Record<string, RegionView> = { EUROPE: 'europe', EU: 'europe', ASIA: 'asia', INDIA: 'india', IN: 'india', BOTH: 'both', ALL: 'both' }
+      if (!m[arg]) return bad(`REGION takes EUROPE, ASIA, INDIA or BOTH. Got “${arg || 'nothing'}”.`)
+      setState({ region: m[arg] }); return ok(`Region set to ${m[arg].toUpperCase()}.`)
     }
     if (verb === 'PIN' || verb === 'UNPIN') {
       const c = findCity(arg)
@@ -206,7 +206,7 @@ export default function TerminalView() {
   const hour = useHour()
   const horizon = useStore((s) => s.horizon), region = useStore((s) => s.region), playing = useStore((s) => s.playing), sel = useStore((s) => s.sel)
   const rowsAll = useMemo(() => cityRows(ds, hour, horizon, 'both'), [ds, hour, horizon])
-  const rows = useMemo(() => rowsAll.filter((r) => region === 'both' || r.region === region), [rowsAll, region])
+  const rows = useMemo(() => rowsAll.filter((r) => region === 'both' || r.region === region || (region === 'india' && r.iso === 'IN')), [rowsAll, region])
   const { pins, setPins, pinned } = usePins(rowsAll)
   const al = useMemo(() => alerts(ds, hour, region), [ds, hour, region])
   const valid = rows.filter((r) => Number.isFinite(r.d6) && Number.isFinite(r.now))
@@ -247,7 +247,7 @@ export default function TerminalView() {
         <dl className="term-status">
           <div><dt>Issue</dt><dd className="num">{utc(issue, false)} UTC</dd></div>
           <div><dt>Horizon</dt><dd className="num">{horizon} h</dd></div>
-          <div><dt>Region</dt><dd>{region === 'both' ? 'Europe + Asia' : region === 'europe' ? 'Europe' : 'Asia'}</dd></div>
+          <div><dt>Region</dt><dd>{REGION_NAME[region]}</dd></div>
         </dl>
       </header>
       <div className="ticker" aria-label="City ticker: PM2.5 now in µg/m³ and change over 6 hours">

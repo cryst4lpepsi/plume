@@ -4,7 +4,7 @@ import { useSyncExternalStore } from 'react'
 import type { RegionKey } from './data'
 
 export type Mode = 'observed' | 'forecast' | 'error' | 'influence'
-export type RegionView = RegionKey | 'both'
+export type RegionView = RegionKey | 'both' | 'india'   // india: the Indian stations of the Asian graph
 export interface Sel { region: RegionKey; station: number }
 export interface State {
   hour: number          // replay clock, fractional hours on the data time axis

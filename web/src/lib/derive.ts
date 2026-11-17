@@ -8,7 +8,10 @@ export const clockRange = (ds: DataSet) => {
   const d = ds.europe
   return { min: d.originStart, max: d.originStart + (d.origins - 1) * d.originStep }
 }
-export const inView = (view: RegionView, r: RegionKey) => view === 'both' || view === r
+export const inView = (view: RegionView, r: RegionKey) => view === 'both' || view === r || (view === 'india' && r === 'asia')
+/** Station-level filter: a region view shows all of its stations; the India view only stations in India. */
+export const stationInView = (view: RegionView, d: RegionData, s: number) => view !== 'india' || d.stations[s].iso === 'IN'
+export const REGION_NAME: Record<RegionView, string> = { europe: 'Europe', asia: 'Asia', both: 'Europe + Asia', india: 'India' }
 
 /** Forecast issue used when scoring the present hour at a given lead: the latest issue at least `horizon` hours old. */
 export function errorOrigin(d: RegionData, hour: number, horizon: number) {
@@ -59,6 +62,7 @@ export function cityRows(ds: DataSet, hour: number, horizon: number, view: Regio
     const o = originIndex(d, hour)
     const lead = Math.min(d.horizons, Math.max(1, hour + horizon - originHour(d, o)))
     d.cities.forEach((c, ci) => {
+      if (view === 'india' && c.iso !== 'IN') return
       const now = cityMean(d, c.stations, (s) => lastObs(d, hour, s))
       const prev = cityMean(d, c.stations, (s) => lastObs(d, hour - 6, s))
       const q = [0, 1, 2].map((k) => cityMean(d, c.stations, (s) => fcAt(d, o, s, lead, k)))
@@ -79,6 +83,7 @@ export function alerts(ds: DataSet, hour: number, view: RegionView = 'both'): Al
     const d = ds[r]
     const o = originIndex(d, hour), oh = originHour(d, o)
     for (let s = 0; s < d.n; s++) {
+      if (!stationInView(view, d, s)) continue
       const now = lastObs(d, hour, s)
       if (Number.isNaN(now)) continue
       const th = THRESHOLDS.find((t) => t > now)
