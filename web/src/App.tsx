@@ -1,11 +1,11 @@
 import { createContext, lazy, Suspense, useContext, useEffect, useLayoutEffect, useState } from 'react'
 import { Route, Routes } from 'react-router-dom'
-import { MotionConfig } from 'framer-motion'
+import { AnimatePresence, MotionConfig } from 'framer-motion'
 import { loadAll } from './lib/data'
 import { type DataSet, clockRange } from './lib/derive'
 import { getState, setState } from './lib/store'
 import { GlobeView } from './views/GlobeView'
-import { BootCtx, Loader } from './ui/Loader'
+import { type Intro, IntroCtx, Loader } from './ui/Loader'
 
 const loadTerminal = () => import('./views/TerminalView')
 const loadMethods = () => import('./views/MethodsView')
@@ -14,6 +14,11 @@ const MethodsView = lazy(loadMethods)
 
 /** Resolves once the page draws frames steadily (8 in a row under 25 ms), or after `cap` ms. The globe's first
  * frames compile shaders and build buffers; the wordmark should not start moving while that blocks the page. */
+// first visit in this browser gets the travelling wordmark; later visits a shorter entrance
+const SEEN = 'plume:seen'
+const seenBefore = () => { try { return localStorage.getItem(SEEN) != null } catch { return false } }
+const markSeen = () => { try { localStorage.setItem(SEEN, '1') } catch { /* private mode: every visit is a first */ } }
+
 function whenSmooth(cap = 2500): Promise<void> {
   return new Promise((res) => {
     const t0 = performance.now(); let last = t0, run = 0
@@ -59,25 +64,29 @@ export default function App() {
   const [progress, setProgress] = useState(0)
   const [barFull, setBarFull] = useState(false)
   const [warm, setWarm] = useState(false)
+  const [entered, setEntered] = useState(false)
+  const [first] = useState(() => !seenBefore())
   const booting = !(barFull && warm)
+  const intro: Intro = booting ? 'boot' : entered ? 'done' : first ? 'fly' : 'letters'
   useEffect(() => {
     loadTerminal(); loadMethods()   // fetch the other views' code meanwhile, so any route has its header ready
     loadAll(setProgress).then(setDs).catch((e) => setErr(String(e.message ?? e)))
   }, [])
   // the view is mounted, hidden, as soon as the data is in; wait for it to settle before handing over
   useEffect(() => { if (ds) whenSmooth().then(() => setWarm(true)) }, [ds])
-  // first entrance only: the rest of the view fades in while the wordmark travels to the header. A layout
-  // effect, so the attribute is set before the revealed view is first painted.
+  // entrance: the rest of the view fades in while the wordmark arrives. A layout effect, so the attribute is
+  // set before the revealed view is first painted.
   useLayoutEffect(() => {
     if (booting) return
+    markSeen()
     document.documentElement.dataset.enter = ''
-    const t = setTimeout(() => delete document.documentElement.dataset.enter, 1600)
+    const t = setTimeout(() => { delete document.documentElement.dataset.enter; setEntered(true) }, 1600)
     return () => clearTimeout(t)
   }, [booting])
   useClock(ds)
   return (
     <MotionConfig reducedMotion="user">
-      <BootCtx.Provider value={booting}>
+      <IntroCtx.Provider value={intro}>
         {ds && (
           <div className={booting ? 'app app-booting' : 'app'} aria-hidden={booting || undefined}>
             <DataCtx.Provider value={ds}>
@@ -91,11 +100,13 @@ export default function App() {
             </DataCtx.Provider>
           </div>
         )}
-        {booting && (
-          // the bar stops short of the end until the view has settled, so it never sits full while nothing happens
-          <Loader progress={warm ? 1 : Math.min(progress, 0.96)} error={err} onDone={() => setBarFull(true)} />
-        )}
-      </BootCtx.Provider>
+        <AnimatePresence>
+          {booting && (
+            // the bar stops short of the end until the view has settled, so it never sits full while nothing happens
+            <Loader key="loader" progress={warm ? 1 : Math.min(progress, 0.96)} error={err} word={first} onDone={() => setBarFull(true)} />
+          )}
+        </AnimatePresence>
+      </IntroCtx.Provider>
     </MotionConfig>
   )
 }

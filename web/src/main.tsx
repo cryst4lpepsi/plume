@@ -13,7 +13,8 @@ import App from './App'
 applyFontSystem().finally(() => {
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
-      <HashRouter>
+      {/* no transitions: the replay clock updates every frame and would keep interrupting a transition render */}
+      <HashRouter useTransitions={false}>
         <App />
       </HashRouter>
     </StrictMode>,
