@@ -13,6 +13,7 @@ import numpy as np
 import pandas as pd
 from scipy import sparse
 from scipy.spatial import cKDTree
+from .files import atomic
 from .regions import REGIONS, START
 from .s3 import session, get
 
@@ -50,7 +51,7 @@ async def fetch(sess, sem, key, region, day):
         except Exception as e:   # over the limit the API answers HTTP 400 "Invalid MAP_KEY"
             text = str(e)
         if text and text.startswith("latitude,longitude"):
-            f.write_text(text, encoding="utf-8")
+            atomic(f, lambda fh: fh.write(text.encode("utf-8")))
             return
         await asyncio.sleep(120)   # the key allows 5,000 transactions per 10 minutes; wait for the window to move
     raise RuntimeError(f"FIRMS {region} {day}: {(text or '')[:200]}")

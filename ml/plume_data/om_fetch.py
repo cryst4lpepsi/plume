@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 import numpy as np
 import omfiles
+from .files import atomic
 from .regions import START, candidates
 
 BASE = "https://openmeteo.s3.amazonaws.com/data"
@@ -68,7 +69,7 @@ def main(model):
         rd = omfiles.OmFileReader(str(tmp))
         assert tuple(rd.shape) == (nlat, nlon, chunk_h), rd.shape
         a = np.stack([rd[int(i), int(j), :] for i, j in cells]).astype(np.float32)
-        np.save(f, a); tmp.unlink()
+        atomic(f, lambda fh: np.save(fh, a)); tmp.unlink()
         print(f"{var} {c} ok {time.time()-t0:.0f}s", flush=True)
 
     with ThreadPoolExecutor(3) as ex:

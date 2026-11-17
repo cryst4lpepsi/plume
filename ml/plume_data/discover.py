@@ -5,6 +5,7 @@ location that has files in the probe month. No API key is needed (public S3 list
 """
 import asyncio, json, sys, time, re
 from pathlib import Path
+from .files import atomic
 from .s3 import session, list_prefix
 
 OUT = Path("data/discover"); OUT.mkdir(parents=True, exist_ok=True)
@@ -21,7 +22,7 @@ async def all_locations(sess):
         return p
     res = await asyncio.gather(*[one(d) for d in range(1, 10)])
     ids = sorted(int(re.search(r"locationid=(\d+)/", p).group(1)) for ps in res for p in ps)
-    f.write_text(json.dumps(ids))
+    atomic(f, lambda fh: fh.write(json.dumps(ids).encode()))
     return ids
 
 
@@ -51,7 +52,7 @@ async def main():
             active = json.loads(pf.read_text())
         else:
             active = [i for i in await asyncio.gather(*[probe(i) for i in ids]) if i]
-            pf.write_text(json.dumps(active))
+            atomic(pf, lambda fh: fh.write(json.dumps(active).encode()))
         print(f"{len(active)} locations pass the probe ({time.time()-t0:.0f}s)", flush=True)
         async def full(i):
             async with sem:

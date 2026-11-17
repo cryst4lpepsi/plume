@@ -7,6 +7,7 @@ import asyncio, gzip, json, sys, time
 from datetime import datetime, timezone
 from pathlib import Path
 import numpy as np
+from .files import atomic
 from .s3 import session, list_prefix, get, BUCKET
 from .regions import MONTHS, START
 
@@ -61,7 +62,7 @@ async def one(sess, sem, i):
             stats["files"] += 1
             parse(raw, s, n, stats)
     await asyncio.gather(*[fetch(k) for k in keys])
-    np.savez_compressed(f, sum=s, n=n, stats=json.dumps(stats))
+    atomic(f, lambda fh: np.savez_compressed(fh, sum=s, n=n, stats=json.dumps(stats)))
 
 
 async def main(part, nparts):

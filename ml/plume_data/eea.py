@@ -13,6 +13,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 import numpy as np
 import pandas as pd
+from .files import atomic
 from .regions import START, region_of
 from .s3 import session, get
 
@@ -63,7 +64,7 @@ async def one(sess, sem, key, urls):
             bad += 1
     s, n, stats = reduce(frames)
     stats["bad_files"] = bad
-    np.savez_compressed(f, sum=s, n=n, stats=json.dumps(stats))
+    atomic(f, lambda fh: np.savez_compressed(fh, sum=s, n=n, stats=json.dumps(stats)))
 
 
 async def urls_by_point(sess):
