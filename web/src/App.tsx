@@ -1,6 +1,6 @@
-import { createContext, lazy, Suspense, useContext, useEffect, useLayoutEffect, useState } from 'react'
-import { Route, Routes } from 'react-router-dom'
-import { AnimatePresence, MotionConfig } from 'framer-motion'
+import { createContext, lazy, Suspense, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { Route, Routes, useLocation } from 'react-router-dom'
+import { AnimatePresence, MotionConfig, motion } from 'framer-motion'
 import { loadAll } from './lib/data'
 import { type DataSet, clockRange } from './lib/derive'
 import { getState, setState } from './lib/store'
@@ -12,19 +12,19 @@ const loadMethods = () => import('./views/MethodsView')
 const TerminalView = lazy(loadTerminal)
 const MethodsView = lazy(loadMethods)
 
-/** Resolves once the page draws frames steadily (8 in a row under 25 ms), or after `cap` ms. The globe's first
+/** Resolves once the page draws `frames` frames in a row under 25 ms each, or after `cap` ms. The globe's first
  * frames compile shaders and build buffers; the wordmark should not start moving while that blocks the page. */
-// first visit in this browser gets the travelling wordmark; later visits a shorter entrance
+// first visit in this browser gets the loader and the travelling wordmark; later visits no loader, a fade-in
 const SEEN = 'plume:seen'
 const seenBefore = () => { try { return localStorage.getItem(SEEN) != null } catch { return false } }
 const markSeen = () => { try { localStorage.setItem(SEEN, '1') } catch { /* private mode: every visit is a first */ } }
 
-function whenSmooth(cap = 2500): Promise<void> {
+function whenSmooth(cap = 2500, frames = 8): Promise<void> {
   return new Promise((res) => {
     const t0 = performance.now(); let last = t0, run = 0
     const tick = (t: number) => {
       run = t - last < 25 ? run + 1 : 0; last = t
-      if (run >= 8 || t - t0 > cap) res(); else requestAnimationFrame(tick)
+      if (run >= frames || t - t0 > cap) res(); else requestAnimationFrame(tick)
     }
     requestAnimationFrame(tick)
   })
@@ -58,6 +58,39 @@ function useClock(ds: DataSet | null) {
   }, [ds])
 }
 
+/** One routed view. After a page switch it mounts transparent and fades in only once it draws smoothly, so the
+ * globe's start-up does not eat the fade. Opacity only: a transform here would break the views' fixed positioning. */
+function Page({ immediate, children }: { immediate: boolean; children: ReactNode }) {
+  const [shown, setShown] = useState(immediate)
+  useEffect(() => { if (!shown) { let live = true; whenSmooth(1500, 24).then(() => live && setShown(true)); return () => { live = false } } }, [shown])
+  return (
+    <motion.div initial={false} animate={{ opacity: shown ? 1 : 0, transition: { duration: 0.35, ease: 'easeOut' } }}
+      style={{ opacity: immediate ? 1 : 0 }} exit={{ opacity: 0, transition: { duration: 0.18, ease: 'easeIn' } }}>
+      {children}
+    </motion.div>
+  )
+}
+
+/** The routed views; switching pages fades the old one out, then the new one in. */
+function Pages() {
+  const location = useLocation()
+  const first = useRef(true)
+  useEffect(() => { first.current = false }, [])
+  return (
+    <AnimatePresence mode="wait">
+      <Page key={location.pathname} immediate={first.current}>
+        <Suspense fallback={null}>
+          <Routes location={location}>
+            <Route path="/" element={<GlobeView />} />
+            <Route path="/terminal" element={<TerminalView />} />
+            <Route path="/methods" element={<MethodsView />} />
+          </Routes>
+        </Suspense>
+      </Page>
+    </AnimatePresence>
+  )
+}
+
 export default function App() {
   const [ds, setDs] = useState<DataSet | null>(null)
   const [err, setErr] = useState<string | null>(null)
@@ -66,7 +99,7 @@ export default function App() {
   const [warm, setWarm] = useState(false)
   const [entered, setEntered] = useState(false)
   const [first] = useState(() => !seenBefore())
-  const booting = !(barFull && warm)
+  const booting = !(warm && (barFull || !first))
   const intro: Intro = booting ? 'boot' : entered ? 'done' : first ? 'fly' : 'letters'
   useEffect(() => {
     loadTerminal(); loadMethods()   // fetch the other views' code meanwhile, so any route has its header ready
@@ -90,22 +123,14 @@ export default function App() {
         {ds && (
           <div className={booting ? 'app app-booting' : 'app'} aria-hidden={booting || undefined}>
             <DataCtx.Provider value={ds}>
-              <Suspense fallback={<main className="boot"><h1>Plume</h1><p>Loading view.</p></main>}>
-                <Routes>
-                  <Route path="/" element={<GlobeView />} />
-                  <Route path="/terminal" element={<TerminalView />} />
-                  <Route path="/methods" element={<MethodsView />} />
-                </Routes>
-              </Suspense>
+              <Pages />
             </DataCtx.Provider>
           </div>
         )}
-        <AnimatePresence>
-          {booting && (
-            // the bar stops short of the end until the view has settled, so it never sits full while nothing happens
-            <Loader key="loader" progress={warm ? 1 : Math.min(progress, 0.96)} error={err} word={first} onDone={() => setBarFull(true)} />
-          )}
-        </AnimatePresence>
+        {booting && (first || err) && (
+          // the bar stops short of the end until the view has settled, so it never sits full while nothing happens
+          <Loader progress={warm ? 1 : Math.min(progress, 0.96)} error={err} onDone={() => setBarFull(true)} />
+        )}
       </IntroCtx.Provider>
     </MotionConfig>
   )
