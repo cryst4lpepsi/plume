@@ -47,6 +47,12 @@ These were added after the first full run. The numbers in README.md and REPORT.m
 - **India and the EEA station types are reported as slices, not separate models.** Indian stations are scored inside the Asian model, and European background, traffic and industrial sites inside the European one (`results/slices.json`). OpenAQ stations in Europe carry no type and fall outside the three groups.
 - **Ablation and unseen-station runs keep test predictions only.** Their validation predictions were never read, and with 700 stations each file is about 220 MB.
 
+## Sharing the model
+
+- **Weights ship with their inputs.** A bundle holds the weights, the station graph and the replay-window inputs, so a forecast can be checked against what was measured without the 60 GB data stage. Forecasting today's air needs live inputs, which is the separate daily-forecast job.
+- **Bundles are not committed.** They go to a GitHub release, keeping the repository small.
+- **The bundle step is outside `make eval`.** A failure there must not stop the results from being written; the notebook runs it as a separate step that may fail.
+
 ## Model
 - **PM2.5 is modelled as log1p(x) minus a constant**, and forecasts are deltas from the last observed value. Quantiles survive the monotone transform, and both regions share one scale for the shared model.
 - **Dynamic wind edge feature** = wind at the source station projected on the bearing to the destination, as three summaries (now, 6 h mean, 24 h mean), fed to the attention and gate MLPs. Per-step message passing inside the GRU would cost about 48x more.

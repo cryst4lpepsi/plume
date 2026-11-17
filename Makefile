@@ -1,7 +1,7 @@
 # Plume: one command per stage. Everything runs from the repo root.
 PY := PYTHONPATH=ml .venv/bin/python
 
-.PHONY: setup data tensors train eval export report check test web build
+.PHONY: setup data tensors train eval export report check bundle test web build
 
 setup:            ## Python venv + web dependencies
 	python3 -m venv .venv
@@ -47,6 +47,9 @@ report:           ## refresh the result tables in README.md and REPORT.md
 
 check:            ## reload the shipped binaries and reproduce results/replay_check.json
 	$(PY) -m plume.check_export
+
+bundle:           ## weights + replay-window inputs per region, for one-station forecasts (data/bundle/)
+	$(PY) -m plume.bundle
 
 test:             ## unit tests (cleaning, selection, graph, metrics)
 	$(PY) -m pytest ml/tests -q

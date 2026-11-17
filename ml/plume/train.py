@@ -16,8 +16,8 @@ RUNS, PRED = Path("data/runs"), Path("data/preds")
 
 class Region:
     """Torch views of one region's tensors plus batch assembly."""
-    def __init__(self, name, holdout=None):
-        d = load(name)
+    def __init__(self, name, holdout=None, d=None):
+        d = load(name) if d is None else d
         self.name, self.d = name, d
         self.X = torch.from_numpy(d["X"])
         self.zy = torch.from_numpy(np.nan_to_num(to_z(np.nan_to_num(d["pm"])))).float()

@@ -114,6 +114,20 @@ predictions. `make check` reloads the shipped binary files and confirms they rep
 The app data in `web/public/data/` (about 44 MB) is committed, so `make setup && make web` shows the app
 without running the pipeline.
 
+### Forecast one station
+
+`make bundle` packs the reported model with everything it needs into `data/bundle/plume-{europe,asia}.npz`:
+the trained weights, the station graph, and the model inputs for the replay window (the last 56 days of the
+test period). With a bundle, one station's forecast needs no data download:
+
+```bash
+PYTHONPATH=ml python -m plume.predict data/bundle/plume-asia.npz --list Delhi
+PYTHONPATH=ml python -m plume.predict data/bundle/plume-asia.npz --station "Anand Vihar" --at 2026-10-20T06
+```
+
+It prints the 24 hourly forecasts (P10, P50, P90) issued at that hour beside what was measured. The whole
+graph is run, because a station's forecast depends on its neighbours. Needs PyTorch (CPU is enough).
+
 ## Layout
 
 ```
