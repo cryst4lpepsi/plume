@@ -10,6 +10,9 @@ from .data import load, eval_mask, targets, git_commit
 from .metrics import score, add_skill
 
 PRED = Path("data/preds"); PRED.mkdir(parents=True, exist_ok=True)
+# LightGBM saves each finished piece here (inside data/preds, so it is checkpointed with the rest): a run cut
+# off by a time limit resumes from the last finished horizon instead of starting over
+CACHE = PRED / "lgb_cache"
 LAGS = (0, 1, 2, 3, 5, 8, 11, 17, 23, 35, 47)
 
 
@@ -74,6 +77,10 @@ def lgb_fit(d, split, h, params, seed=0):
 
 def lgb_tune(region, d, split):
     """Validation MAE (z space, mean over TUNE_H) of each grid entry; returns (best, scores)."""
+    f = CACHE / f"{region}_tune.json"
+    if f.exists():
+        best, scores = json.loads(f.read_text())
+        return best, scores
     scores = []
     for params in LGB_GRID:
         err = []
@@ -82,7 +89,10 @@ def lgb_tune(region, d, split):
             err.append(float(np.abs(m.predict(xb) - yb).mean()))
         scores.append(float(np.mean(err)))
         print(region, "lgb tune", params, round(scores[-1], 4), flush=True)
-    return LGB_GRID[int(np.argmin(scores))], scores
+    best = LGB_GRID[int(np.argmin(scores))]
+    CACHE.mkdir(parents=True, exist_ok=True)
+    f.write_text(json.dumps([best, scores]))
+    return best, scores
 
 
 def lgb_fit_predict(region, d, params, pre="", split=None, seed=0):
@@ -90,11 +100,19 @@ def lgb_fit_predict(region, d, params, pre="", split=None, seed=0):
     ev = {s: origins(s) for s in (pre + "val", pre + "test")}
     Xev = {s: lgb_features(d, t) for s, t in ev.items()}
     out = {s: np.zeros((len(t), d["X"].shape[1], HORIZON), np.float32) for s, t in ev.items()}
+    CACHE.mkdir(parents=True, exist_ok=True)
     for h in range(1, HORIZON + 1):
-        m, _, _ = lgb_fit(d, split, h, params, seed)
-        for s, t in ev.items():
-            out[s][:, :, h - 1] = from_z(d["anchor"][t] + m.predict(Xev[s]).reshape(len(t), -1))
-        print(region, pre + "lgb h", h, "trees", m.best_iteration_, flush=True)
+        f = CACHE / f"{region}_{pre or 'm'}_h{h:02d}.npz"
+        if not f.exists():
+            m, _, _ = lgb_fit(d, split, h, params, seed)
+            tmp = f.with_name(f.name + ".part")
+            with open(tmp, "wb") as fh:
+                np.savez(fh, **{s: from_z(d["anchor"][t] + m.predict(Xev[s]).reshape(len(t), -1)).astype(np.float32) for s, t in ev.items()})
+            tmp.replace(f)
+            print(region, pre + "lgb h", h, "trees", m.best_iteration_, flush=True)
+        z = np.load(f)
+        for s in ev:
+            out[s][:, :, h - 1] = z[s]
     return out
 
 
