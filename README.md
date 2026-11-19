@@ -127,6 +127,10 @@ The interpretation, with its caveats, is in [REPORT.md](REPORT.md#ablation-does-
 
 Requirements: Python 3.11+, Node 20+, about 30 GB of free disk for the data stage. No GPU. No API keys are needed; an optional free NASA key adds the fire inputs.
 
+The full suite takes about 30 CPU-hours. The published numbers were produced on Kaggle's free CPU sessions
+with [`notebooks/plume_kaggle.ipynb`](notebooks/plume_kaggle.ipynb), which runs the same `make` targets and
+checkpoints to private datasets so a run resumes across Kaggle's 12-hour session limit.
+
 ```bash
 make setup     # Python venv and web dependencies
 make data      # download OpenAQ, EEA, ERA5, CAMS and fire extracts; clean; choose stations (about 1 h, network-bound)
@@ -146,13 +150,15 @@ without running the pipeline.
 
 ### Forecast one station
 
-`make bundle` packs the reported model with everything it needs into `data/bundle/plume-{europe,asia}.npz`:
+The bundles from the published run are attached to the
+[v2.0 release](https://github.com/cryst4lpepsi/plume/releases/tag/v2.0); download them into `data/bundle/`.
+`make bundle` builds them from your own run. It packs the reported model with everything it needs into `data/bundle/plume-{europe,asia}.npz`:
 the trained weights, the station graph, and the model inputs for the replay window (the last 56 days of the
 test period). With a bundle, one station's forecast needs no data download:
 
 ```bash
-PYTHONPATH=ml python -m plume.predict data/bundle/plume-asia.npz --list Delhi
-PYTHONPATH=ml python -m plume.predict data/bundle/plume-asia.npz --station "Anand Vihar" --at 2026-10-20T06
+PYTHONPATH=ml python -m plume.predict data/bundle/plume-asia.npz --list Kanpur
+PYTHONPATH=ml python -m plume.predict data/bundle/plume-asia.npz --station Kanpur --at 2026-10-20T06
 ```
 
 It prints the 24 hourly forecasts (P10, P50, P90) issued at that hour beside what was measured. The whole

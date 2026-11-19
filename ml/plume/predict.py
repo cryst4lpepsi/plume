@@ -1,8 +1,8 @@
 """Forecast PM2.5 for one station from a model bundle (see plume.bundle).
 
 python -m plume.predict plume-europe.npz --station Berlin
-python -m plume.predict plume-asia.npz --station "Anand Vihar" --at 2026-10-20T06
-python -m plume.predict plume-asia.npz --list Delhi
+python -m plume.predict plume-asia.npz --station Kanpur --at 2026-10-20T06
+python -m plume.predict plume-asia.npz --list Kanpur
 
 Prints the 24 hourly forecasts (P10, P50, P90) issued at the given hour, next to what was measured.
 The whole graph is run, because a station's forecast depends on its neighbours; only the one station is shown.

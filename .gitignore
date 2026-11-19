@@ -11,3 +11,7 @@ __pycache__/
 .env.*
 qa/out/
 ml/runs/
+
+# Kaggle downloads: the results archive and exported copies of the notebook
+plume_results*.zip
+notebooks/notebook*.ipynb
