@@ -4,7 +4,7 @@ import json, re
 from pathlib import Path
 
 R = Path("results")
-J = lambda n: json.loads((R / f"{n}.json").read_text())
+J = lambda n: json.loads((R / f"{n}.json").read_text(encoding="utf-8"))
 HS = (1, 3, 6, 12, 24)
 NAMES = [("plume", "Plume graph model"), ("lightgbm", "LightGBM (no graph)"), ("persistence", "Persistence"),
          ("seasonal_naive", "Seasonal naive"), ("cams", "CAMS via Open-Meteo")]
@@ -124,13 +124,21 @@ def quality_table():
         ("Coverage threshold used", "coverage_threshold"), ("Candidates passing", "candidates_ge_threshold"), ("Stations selected", "stations"),
         ("Median coverage of selected stations", "median_station_coverage"), ("Station-hours", "station_hours"), ("Observed", "observed_hours"),
         ("Filled by interpolation (gap of 3 h or less)", "interpolated_short_gap_hours"), ("Missing, masked in the loss", "missing_hours"), ("Names romanised", "transliterated_names")]
-    f = lambda v: f"{v:,}" if isinstance(v, int) else (f"{v*100:.1f}%" if v <= 1 else f"{v:,.0f}")
-    out = ["| | Europe | Asia |", "|---|---:|---:|"] + [f"| {n} | {f(q['europe'][k])} | {f(q['asia'][k])} |" for n, k in rows]
+    # a run that restored the data stage from a checkpoint has no download and cleaning counts (see data_quality.json)
+    f = lambda v: "not recorded" if v is None else f"{v:,}" if isinstance(v, int) else (f"{v*100:.1f}%" if v <= 1 else f"{v:,.0f}")
+    out = ["| | Europe | Asia |", "|---|---:|---:|"] + [f"| {n} | {f(q['europe'].get(k))} | {f(q['asia'].get(k))} |" for n, k in rows]
+    src = lambda r: ", ".join(f"{'EEA' if s == 'eea' else 'OpenAQ'} {n}" for s, n in q[r].get("stations_by_source", {}).items())
+    out.append(f"| Stations by source | {src('europe')} | {src('asia')} |")
+    if q.get("note"):
+        out += ["", f"_{q['note']}_"]
     for r, label in REG:
-        out += ["", f"**{label}: coverage by country** (candidates downloaded / at 80% or better / at 70% or better / selected)", "",
-                "| Country | Downloaded | ≥80% | ≥70% | Selected |", "|---|---:|---:|---:|---:|"]
-        for c, v in q[r]["per_country_candidates"].items():
-            out.append(f"| {c} | {v['downloaded']} | {v['ge80']} | {v['ge70']} | {q[r]['per_country'].get(c, 0)} |")
+        if "per_country_candidates" in q[r]:
+            out += ["", f"**{label}: coverage by country** (candidates downloaded / at 80% or better / at 70% or better / selected)", "",
+                    "| Country | Downloaded | ≥80% | ≥70% | Selected |", "|---|---:|---:|---:|---:|"]
+            for c, v in q[r]["per_country_candidates"].items():
+                out.append(f"| {c} | {v['downloaded']} | {v['ge80']} | {v['ge70']} | {q[r]['per_country'].get(c, 0)} |")
+        else:
+            out += ["", f"**{label}: stations by country.** " + ", ".join(f"{c} {n}" for c, n in q[r]["per_country"].items()) + "."]
     return "\n".join(out)
 
 
@@ -144,12 +152,12 @@ def main():
         p = Path(f)
         if not p.exists():
             continue
-        s = p.read_text()
+        s = p.read_text(encoding="utf-8")
         for name, fn in BLOCKS.items():
             pat = re.compile(rf"(<!-- results:{name}:start -->).*?(<!-- results:{name}:end -->)", re.S)
             if pat.search(s):
                 s = pat.sub(lambda m: f"{m.group(1)}\n{fn()}\n{m.group(2)}", s)
-        p.write_text(s)
+        p.write_text(s, encoding="utf-8", newline="\n")
         print("updated", f)
 
 if __name__ == "__main__":

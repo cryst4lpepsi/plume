@@ -71,7 +71,7 @@ export function GlobeView() {
           <button type="button" className="link" aria-pressed={lowPower} onClick={() => setState({ lowPower: !lowPower, lowPowerAuto: false })}>
             Low-power rendering: {lowPower ? (lowAuto ? 'on (switched automatically, slow frames)' : 'on') : 'off'}
           </button>
-          <span>Observations: OpenAQ, from many providers under their own licences. Baseline: CAMS via Open-Meteo. Night lights: NASA Black Marble. Coastlines: Natural Earth. <Link to="/methods">Methods and sources</Link></span>
+          <span>Observations: EEA and OpenAQ, from many providers under their own licences. Fires: NASA FIRMS. Baseline: CAMS via Open-Meteo. Night lights: NASA Black Marble. Coastlines: Natural Earth. <Link to="/methods">Methods and sources</Link></span>
         </p>
       </footer>
     </main>

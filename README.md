@@ -18,7 +18,8 @@ with a P10 to P90 range. The same forecasts are shown two ways:
 
 A **Methods** page reports how good the model is, region by region, including where it loses.
 
-The app is a **replay of a held-out test period** (September and October 2026), not a live service.
+The app is a **replay of a held-out test period** (September and October 2026), not a live service. It
+covers 724 stations in Europe (646 from the European Environment Agency, 78 from OpenAQ) and 423 in Asia.
 
 ![Globe](docs/screenshots/globe-observed-1440.png)
 
@@ -32,28 +33,29 @@ previous 48 hours, every horizon whose target hour was really measured. The grap
 and standard deviation of three seeds. Bold marks the lowest error in a column.
 
 **Headline, stated plainly.** The graph model is the most accurate of the five models on mean absolute
-error over all 24 horizons in both regions, but its margin over LightGBM, which sees no neighbours, is small:
-3.2% in Europe and 2.4% in Asia. It ties LightGBM at 1 h. Wind-aware edges add almost nothing over
-distance-only edges. For stations it has never seen, it beats interpolation in Asia and loses to it in
-Europe. The test period has no winter. Details and caveats are in [REPORT.md](REPORT.md).
+error over all 24 horizons in both regions, but its margin over LightGBM, which sees no neighbours, is
+modest: 3.7% in Europe and 3.7% in Asia. It ties LightGBM at 1 h. Wind-aware edges add nothing measurable
+over distance-only edges. In a separate winter test the margin shrinks to 1.2% and 0.6%, and at Indian
+stations in winter LightGBM is better. For stations it has never seen, the graph model beats interpolation
+in Asia and is slightly behind it in Europe. Details and caveats are in [REPORT.md](REPORT.md).
 
 <!-- results:main:start -->
 **Europe** (MAE, µg/m³, test period; chosen model: shared)
 
 | Model | 1 h | 3 h | 6 h | 12 h | 24 h | Skill vs persistence at 24 h |
 |---|---:|---:|---:|---:|---:|---:|
-| Plume graph model | 1.04 ±0.00 | **1.71 ±0.00** | **2.15 ±0.01** | **2.52 ±0.01** | **2.81 ±0.01** | +17.9% |
-| LightGBM (no graph) | **1.04** | 1.78 | 2.27 | 2.60 | 2.83 | +17.6% |
-| Persistence | 1.11 | 2.10 | 2.87 | 3.41 | 3.43 | reference |
-| Seasonal naive | 3.31 | 3.36 | 3.40 | 3.42 | 3.43 | +0.0% |
-| CAMS via Open-Meteo | 3.29 | 3.29 | 3.29 | 3.29 | 3.29 | +4.1% |
+| Plume graph model | 1.35 ±0.00 | **2.01 ±0.00** | **2.38 ±0.00** | **2.69 ±0.00** | **2.99 ±0.01** | +18.4% |
+| LightGBM (no graph) | **1.35** | 2.10 | 2.50 | 2.79 | 3.02 | +17.5% |
+| Persistence | 1.47 | 2.54 | 3.31 | 3.78 | 3.67 | reference |
+| Seasonal naive | 3.62 | 3.64 | 3.65 | 3.66 | 3.67 | +0.0% |
+| CAMS via Open-Meteo | 3.58 | 3.59 | 3.59 | 3.59 | 3.59 | +2.1% |
 
 **Asia** (MAE, µg/m³, test period; chosen model: shared)
 
 | Model | 1 h | 3 h | 6 h | 12 h | 24 h | Skill vs persistence at 24 h |
 |---|---:|---:|---:|---:|---:|---:|
-| Plume graph model | **2.47 ±0.00** | **3.61 ±0.02** | **4.20 ±0.02** | **4.66 ±0.02** | **5.09 ±0.00** | +14.7% |
-| LightGBM (no graph) | 2.49 | 3.73 | 4.33 | 4.76 | 5.18 | +13.3% |
+| Plume graph model | **2.43 ±0.01** | **3.52 ±0.01** | **4.08 ±0.01** | **4.57 ±0.01** | **5.05 ±0.01** | +15.4% |
+| LightGBM (no graph) | 2.46 | 3.69 | 4.28 | 4.73 | 5.17 | +13.4% |
 | Persistence | 2.63 | 4.28 | 5.36 | 5.95 | 5.98 | reference |
 | Seasonal naive | 5.76 | 5.85 | 5.91 | 5.94 | 5.98 | +0.0% |
 | CAMS via Open-Meteo | 9.47 | 9.47 | 9.47 | 9.47 | 9.46 | -58.4% |
@@ -67,19 +69,47 @@ How to read this:
   uses CAMS Europe (0.1°); Asia uses CAMS global (0.4°, 3-hourly, interpolated to hourly by Open-Meteo).
   Skill against CAMS in the two regions is not like for like.
 - **The honest test of the graph is the LightGBM row**: same inputs, no neighbours.
-- The test period has no winter in it. See limitations in [REPORT.md](REPORT.md).
+- The main test period has no winter in it; the winter test below covers that.
+
+### Winter (December 2025 to February 2026)
+
+Models trained only on data to August 2025, so they never saw this winter. Not comparable with the main
+table: the training period is eight months shorter.
+
+<!-- results:winter:start -->
+**Europe** (MAE, µg/m³, December 2025 to February 2026; models trained on data to August 2025)
+
+| Model | 1 h | 3 h | 6 h | 12 h | 24 h | Skill vs persistence at 24 h |
+|---|---:|---:|---:|---:|---:|---:|
+| Plume graph model | 2.55 ±0.00 | **4.10 ±0.00** | **5.17 ±0.01** | **6.15 ±0.00** | 7.10 ±0.01 | +14.8% |
+| LightGBM (no graph) | **2.54** | 4.17 | 5.29 | 6.25 | **7.07** | +15.1% |
+| Persistence | 2.69 | 4.83 | 6.60 | 7.98 | 8.32 | reference |
+| Seasonal naive | 8.25 | 8.27 | 8.30 | 8.31 | 8.32 | +0.0% |
+| CAMS via Open-Meteo | 7.99 | 7.99 | 7.99 | 7.98 | 7.97 | +4.2% |
+
+**Asia** (MAE, µg/m³, December 2025 to February 2026; models trained on data to August 2025)
+
+| Model | 1 h | 3 h | 6 h | 12 h | 24 h | Skill vs persistence at 24 h |
+|---|---:|---:|---:|---:|---:|---:|
+| Plume graph model | 3.53 ±0.02 | **5.70 ±0.05** | **7.06 ±0.06** | **7.86 ±0.05** | **8.48 ±0.07** | +15.0% |
+| LightGBM (no graph) | **3.48** | 5.80 | 7.13 | 7.91 | 8.49 | +14.8% |
+| Persistence | 3.75 | 6.82 | 9.14 | 10.22 | 9.97 | reference |
+| Seasonal naive | 9.76 | 9.86 | 9.93 | 9.97 | 9.97 | +0.0% |
+| CAMS via Open-Meteo | 13.31 | 13.30 | 13.29 | 13.26 | 13.22 | -32.6% |
+
+<!-- results:winter:end -->
 
 ### Does the wind-aware graph help?
 
 <!-- results:ablation:start -->
 | Region | Variant | Seeds | Mean MAE over 24 horizons | 1 h | 6 h | 24 h | vs no graph |
 |---|---|---:|---:|---:|---:|---:|---:|
-| Europe (median edge 65 km) | No graph | 3 | 2.503 ±0.009 | 1.08 ±0.00 | 2.34 ±0.01 | 2.90 ±0.01 | reference |
-| Europe (median edge 65 km) | Distance-only edges | 3 | 2.399 ±0.001 | 1.05 ±0.00 | 2.19 ±0.00 | 2.81 ±0.00 | -4.16% |
-| Europe (median edge 65 km) | Wind-aware edges | 3 | 2.393 ±0.001 | 1.04 ±0.00 | 2.18 ±0.01 | 2.81 ±0.00 | -4.41% |
-| Asia (median edge 82 km) | No graph | 3 | 4.643 ±0.011 | 2.53 ±0.01 | 4.39 ±0.02 | 5.23 ±0.00 | reference |
-| Asia (median edge 82 km) | Distance-only edges | 3 | 4.508 ±0.008 | 2.47 ±0.00 | 4.23 ±0.01 | 5.10 ±0.01 | -2.92% |
-| Asia (median edge 82 km) | Wind-aware edges | 3 | 4.502 ±0.004 | 2.47 ±0.00 | 4.22 ±0.02 | 5.10 ±0.00 | -3.05% |
+| Europe (median edge 74 km) | No graph | 3 | 2.700 ±0.003 | 1.39 ±0.00 | 2.54 ±0.01 | 3.07 ±0.00 | reference |
+| Europe (median edge 74 km) | Distance-only edges | 3 | 2.599 ±0.001 | 1.36 ±0.00 | 2.41 ±0.00 | 2.99 ±0.00 | -3.76% |
+| Europe (median edge 74 km) | Wind-aware edges | 3 | 2.600 ±0.005 | 1.36 ±0.00 | 2.41 ±0.01 | 3.00 ±0.01 | -3.70% |
+| Asia (median edge 82 km) | No graph | 3 | 4.576 ±0.008 | 2.50 ±0.01 | 4.28 ±0.01 | 5.21 ±0.00 | reference |
+| Asia (median edge 82 km) | Distance-only edges | 3 | 4.440 ±0.007 | 2.45 ±0.00 | 4.13 ±0.01 | 5.07 ±0.00 | -2.97% |
+| Asia (median edge 82 km) | Wind-aware edges | 3 | 4.434 ±0.010 | 2.45 ±0.00 | 4.12 ±0.01 | 5.07 ±0.01 | -3.10% |
 <!-- results:ablation:end -->
 
 The interpretation, with its caveats, is in [REPORT.md](REPORT.md#ablation-does-the-wind-aware-graph-help).
@@ -89,8 +119,8 @@ The interpretation, with its caveats, is in [REPORT.md](REPORT.md#ablation-does-
 <!-- results:calibration:start -->
 | Region | 1 h | 3 h | 6 h | 12 h | 24 h | Mean over 24 h | Below P10 | Above P90 |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
-| Europe | 82.9% | 81.5% | 80.7% | 80.9% | 81.2% | 81.0% | 10.6% | 8.4% |
-| Asia | 78.9% | 79.5% | 80.1% | 80.7% | 81.0% | 80.4% | 10.4% | 9.2% |
+| Europe | 81.1% | 81.0% | 80.8% | 80.8% | 80.9% | 80.8% | 10.5% | 8.6% |
+| Asia | 79.2% | 79.9% | 80.3% | 80.5% | 80.7% | 80.3% | 10.0% | 9.8% |
 <!-- results:calibration:end -->
 
 ## Run it
@@ -146,9 +176,9 @@ docs/           screenshots, font test shots
 - **Observations:** [OpenAQ](https://openaq.org), open-data archive on AWS. OpenAQ aggregates measurements
   from many government and research providers, each under its own licence; check the provider's terms before
   reusing station data.
-- **European observations (added after the published run):** [European Environment Agency](https://www.eea.europa.eu/en/datahub),
+- **European observations:** [European Environment Agency](https://www.eea.europa.eu/en/datahub),
   Air Quality Download Service, hourly data reported by member countries (E1a and E2a).
-- **Fires (added after the published run):** NASA [FIRMS](https://firms.modaps.eosdis.nasa.gov), VIIRS active fires
+- **Fires:** NASA [FIRMS](https://firms.modaps.eosdis.nasa.gov), VIIRS active fires
   from NOAA-21. Needs a free key in `FIRMS_MAP_KEY`; without it the fire inputs are zero.
 - **CAMS PM2.5 baseline and ERA5 weather:** Copernicus Atmosphere Monitoring Service and Copernicus Climate
   Change Service, through [Open-Meteo](https://open-meteo.com)'s open-data distribution (CC BY 4.0).

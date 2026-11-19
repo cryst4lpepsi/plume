@@ -1,18 +1,19 @@
 {
- "script": "ml/plume/data.py",
- "commit": "eb31da0",
+ "script": "ml/tools/graph_from_export.py",
+ "source": "web/public/data/{region}/index.json",
  "europe": {
-  "stations": 420,
-  "edges": 3248,
-  "isolated_self_loop_only": 2,
+  "stations": 724,
+  "edges": 5677,
+  "isolated_self_loop_only": 1,
   "max_km": 300.0,
   "k": 8,
-  "mean_in_degree": 7.733333333333333,
-  "median_edge_km": 65.01785278320312,
-  "mean_edge_km": 74.2889175415039,
-  "share_nodes_full_degree": 0.9428571428571428,
-  "median_nearest_km": 34.597225189208984
+  "mean_in_degree": 7.8411602209944755,
+  "median_edge_km": 73.8,
+  "mean_edge_km": 84.34044389642418,
+  "share_nodes_full_degree": 0.9488950276243094,
+  "median_nearest_km": 38.4
  },
+ "commit": "808f56b",
  "asia": {
   "stations": 423,
   "edges": 3217,
@@ -20,9 +21,9 @@
   "max_km": 500.0,
   "k": 8,
   "mean_in_degree": 7.6052009456264775,
-  "median_edge_km": 82.18611145019531,
-  "mean_edge_km": 109.09783935546875,
+  "median_edge_km": 82.2,
+  "mean_edge_km": 109.09816599316133,
   "share_nodes_full_degree": 0.9030732860520094,
-  "median_nearest_km": 49.600318908691406
+  "median_nearest_km": 49.6
  }
 }

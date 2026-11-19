@@ -2,44 +2,36 @@
 
 ## Summary
 
-**What works.** The whole pipeline runs end to end on real data with no API key: OpenAQ archive download and
-cleaning, station selection, ERA5 and CAMS extraction, four baselines, the graph model (3 seeds, 3 edge
-variants, shared and per-region), evaluation, export and the web app (Globe with four modes, station drawer,
-Terminal with command bar, Methods). `make eval` regenerates every number shown in the app and in the
-tables below from saved predictions.
+This is the second full run. Compared with the first it has European stations from the EEA (724 in Europe
+instead of 420), satellite fire detections as an input, a tuning stage for both the graph model and
+LightGBM, a second test on winter, and results for India and for European station types.
 
-**Results, Europe (420 stations).** The graph model has the lowest MAE at 3, 6, 12 and 24 h. Mean MAE over
-all 24 horizons is 2.377 ±0.007 µg/m³ against 2.455 for LightGBM on the same inputs (3.2% lower), 3.109
-for persistence and 3.287 for CAMS. At 1 h it ties LightGBM (1.04 both; LightGBM is ahead in the third
-decimal and on RMSE), and at 24 h the gap is 0.01. Skill against persistence at 24 h is +17.9%.
+**Results, Europe (724 stations).** The graph model has the lowest mean absolute error at 3, 6, 12 and 24 h.
+Over all 24 horizons it is 2.579 ±0.002 µg/m³ against 2.678 for LightGBM on the same inputs (3.7% lower),
+3.488 for persistence and 3.587 for CAMS. At 1 h it ties LightGBM (1.35 both). Skill against persistence
+at 24 h is +18.4%.
 
-**Results, Asia (423 stations).** The graph model has the lowest MAE at all five reported horizons: 4.487
-±0.014 over all horizons against 4.598 for LightGBM (2.4% lower), 5.645 for persistence and 9.471 for CAMS
-global. LightGBM has the lower RMSE at 1 h. Skill against persistence at 24 h is +14.7%.
+**Results, Asia (423 stations).** The graph model has the lowest error at all five reported horizons: 4.401
+±0.008 over all horizons against 4.569 for LightGBM (3.7% lower), 5.645 for persistence and 9.471 for CAMS
+global. Skill against persistence at 24 h is +15.4%.
 
-**What the graph is worth.** Message passing lowers MAE by 4.4% in Europe and 3.1% in Asia compared with the
-same network without it. Making the edges wind-aware adds almost nothing on top of distance-only edges:
-0.006 µg/m³ in both regions, inside the seed spread in Asia. The premise of the project, that wind-aware
-edges matter, is not supported by this test period.
+**Winter (December 2025 to February 2026).** Models trained only on data to August 2025 were tested on the
+following winter. The graph model still leads, but by less: 1.2% below LightGBM in Europe (5.848 against
+5.919) and 0.6% in Asia (7.466 against 7.512). At Indian stations in winter LightGBM is better (17.86
+against 18.01).
 
-**Unseen stations.** For a station with no history, the graph model beats inverse-distance weighting of its
-neighbours' forecasts in Asia (5.75 against 6.09) and loses to it in Europe (3.84 against 3.68).
+**What the graph is worth.** Message passing lowers error by 3.7% in Europe and 3.0% in Asia compared with
+the same network without it. Wind-aware edges add nothing measurable over distance-only edges: the
+difference is inside the seed spread in both regions.
 
-**Calibration.** P10 to P90 covers 81.0% of measurements in Europe and 80.4% in Asia (target 80%).
+**Unseen stations.** For a station with no history, the graph model beats inverse-distance interpolation of
+its neighbours' forecasts in Asia (5.71 against 6.06) and is slightly behind it in Europe (3.29 against 3.26).
 
-**What was cut or not done.** Hyperparameter tuning (interrupted, then dropped), the optional oracle-weather
-variant, and a frame-rate measurement on real graphics hardware (the build container has software WebGL
-only). Nothing on the planned feature list had to go: the unseen-station experiment, Influence view, command bar
-and mobile layouts are all in.
+**Calibration.** P10 to P90 covers 80.8% of measurements in Europe and 80.3% in Asia (target 80%).
 
-**Three things to do next.**
-
-1. Test through a winter. The test period is August to October; the season when PM2.5 matters most is
-   unmeasured.
-2. Find out why wind-aware edges add so little: try forecast wind over the next 24 hours as an edge input
-   (the oracle variant), longer edges, and a per-episode evaluation on days with strong advection.
-3. Tune the model and LightGBM properly. Both are at first-guess settings, so the 2 to 3% gap between them
-   could move either way.
+**Next.** Find out why wind-aware edges add nothing (forecast wind as an edge input, scoring on days with
+strong transport between stations), add the CAMS forecast and forecast weather as inputs, and test whether
+a calendar of fireworks nights and holidays helps in winter. Details are in [DECISIONS.md](DECISIONS.md).
 
 ## Data
 
@@ -47,128 +39,71 @@ and mobile layouts are all in.
 
 | What | Source | Notes |
 |---|---|---|
-| PM2.5 observations | OpenAQ open-data archive on AWS (`openaq-data-archive`), anonymous access | One gzipped CSV per station per day. 2,201 candidate stations, about 1.6 million files. No API key was available or needed. |
-| CAMS PM2.5 (baseline) | Open-Meteo open-data bucket on AWS (`openmeteo`), `cams_europe` 0.1° and `cams_global` 0.4° | The same series the Open-Meteo Air Quality API serves; verified identical for Berlin and Delhi. |
-| Weather (features) | Same bucket, `copernicus_era5` 0.25°: 10 m wind u/v, 2 m temperature, dew point, precipitation, boundary-layer height | Relative humidity derived from temperature and dew point. All six variables exist for the whole period with no gaps. |
+| PM2.5 observations, Asia and part of Europe | OpenAQ open-data archive on AWS (`openaq-data-archive`), anonymous access | One gzipped CSV per station per day. |
+| PM2.5 observations, Europe | European Environment Agency download service | Hourly data from national networks, with each station's type (background, traffic, industrial) and area. 646 of the 724 European stations. |
+| Fires (features) | NASA FIRMS, VIIRS on NOAA-21 | Fire radiative power within 100 and 300 km of each station over the previous 24 hours. Needs a free key. |
+| CAMS PM2.5 (baseline) | Open-Meteo open-data bucket on AWS (`openmeteo`), `cams_europe` 0.1° and `cams_global` 0.4° | The same series the Open-Meteo Air Quality API serves. |
+| Weather (features) | Same bucket, `copernicus_era5` 0.25°: 10 m wind u/v, 2 m temperature, dew point, precipitation, boundary-layer height | Relative humidity derived from temperature and dew point. |
 | Base map | NASA Black Marble 2016 (GIBS WMS), Natural Earth 1:50m | |
 
-Period: 2024-11-01 to 2026-10-31 UTC. Train to 2026-04-30, validation May to July 2026, test August to October 2026.
+Period: 2024-11-01 to 2026-10-31 UTC. Main split: train to 2026-04-30, validation May to July 2026, test
+August to October 2026. Winter split: train to 2025-08-31, validation September to November 2025, test
+December 2025 to February 2026.
 
 ### Coverage check (done first)
 
-The archive holds 56,459 location folders. 8,222 had files in both probe months; 3,469 of those report PM2.5
-inside the two region boxes (1,541 Europe, 1,928 Asia). A second pass over locations that failed the probe
-found 505 Indian stations whose files start in February to March 2025: OpenAQ's archive has no Indian (CPCB)
-data for November 2024 to February 2025. China has about a dozen stations in the archive in total.
+The OpenAQ archive holds about 56,500 location folders; 8,222 had files in both probe months. A second pass
+over locations that failed the probe found that OpenAQ has no Indian (CPCB) data for November 2024 to
+February 2025, so Indian stations lose their first winter. The EEA service has 3,596 sampling points in the
+European box, of which 1,328 have 80% hourly coverage or better. China has about a dozen stations in the
+OpenAQ archive in total.
 
 ### Data quality
 
 <!-- results:quality:start -->
 | | Europe | Asia |
 |---|---:|---:|
-| Candidates downloaded | 1,475 | 726 |
-| PM2.5 rows read | 46,872,343 | 14,545,878 |
-| Negative rows dropped | 481,821 | 4,161 |
-| Rows above 2,000 µg/m³ dropped | 18,820 | 192,795 |
-| Flat-lined hours removed (run of 12 h or more) | 136,348 | 43,560 |
-| Single-hour spikes removed | 1,877 | 2,127 |
-| Candidates at 80% coverage or better | 643 | 387 |
+| Candidates downloaded | not recorded | not recorded |
+| PM2.5 rows read | not recorded | not recorded |
+| Negative rows dropped | not recorded | not recorded |
+| Rows above 2,000 µg/m³ dropped | not recorded | not recorded |
+| Flat-lined hours removed (run of 12 h or more) | not recorded | not recorded |
+| Single-hour spikes removed | not recorded | not recorded |
+| Candidates at 80% coverage or better | not recorded | not recorded |
 | Coverage threshold used | 80.0% | 70.0% |
-| Candidates passing | 643 | 557 |
-| Stations selected | 420 | 423 |
-| Median coverage of selected stations | 87.8% | 83.7% |
-| Station-hours | 7,358,400 | 7,410,960 |
-| Observed | 6,444,929 | 6,165,650 |
-| Filled by interpolation (gap of 3 h or less) | 329,587 | 268,933 |
-| Missing, masked in the loss | 583,884 | 976,377 |
+| Candidates passing | not recorded | not recorded |
+| Stations selected | 724 | 423 |
+| Median coverage of selected stations | 96.6% | 83.7% |
+| Station-hours | 12,684,480 | 7,410,960 |
+| Observed | 11,987,974 | 6,165,650 |
+| Filled by interpolation (gap of 3 h or less) | 126,066 | 268,933 |
+| Missing, masked in the loss | 570,440 | 976,377 |
 | Names romanised | 0 | 264 |
+| Stations by source | EEA 646, OpenAQ 78 | OpenAQ 423 |
 
-**Europe: coverage by country** (candidates downloaded / at 80% or better / at 70% or better / selected)
+_Recomputed from data/processed. The download and cleaning counts were not recorded for this run._
 
-| Country | Downloaded | ≥80% | ≥70% | Selected |
-|---|---:|---:|---:|---:|
-| DE | 318 | 279 | 304 | 132 |
-| ES | 199 | 1 | 16 | 1 |
-| FR | 144 | 77 | 124 | 51 |
-| IT | 104 | 0 | 1 | 0 |
-| PL | 83 | 66 | 76 | 46 |
-| BE | 79 | 58 | 79 | 41 |
-| AT | 50 | 1 | 46 | 1 |
-| SK | 46 | 7 | 46 | 7 |
-| NO | 43 | 0 | 28 | 0 |
-| CZ | 41 | 0 | 0 | 0 |
-| HU | 38 | 30 | 34 | 25 |
-| SE | 37 | 0 | 5 | 0 |
-| BG | 34 | 27 | 33 | 23 |
-| NL | 29 | 28 | 29 | 24 |
-| FI | 23 | 17 | 21 | 17 |
-| JE | 23 | 0 | 16 | 0 |
-| AM | 22 | 0 | 5 | 0 |
-| GB | 19 | 12 | 14 | 12 |
-| SI | 19 | 0 | 18 | 0 |
-| RO | 18 | 6 | 10 | 6 |
-| PT | 14 | 0 | 0 | 0 |
-| HR | 12 | 0 | 0 | 0 |
-| IS | 12 | 4 | 4 | 4 |
-| CH | 9 | 8 | 8 | 8 |
-| CY | 9 | 9 | 9 | 9 |
-| GR | 8 | 0 | 3 | 0 |
-| IE | 7 | 0 | 3 | 0 |
-| LV | 7 | 3 | 7 | 3 |
-| MT | 6 | 0 | 4 | 0 |
-| EE | 6 | 3 | 6 | 3 |
-| TR | 5 | 4 | 5 | 4 |
-| LU | 4 | 0 | 4 | 0 |
-| BA | 2 | 1 | 2 | 1 |
-| DK | 1 | 0 | 1 | 0 |
-| AD | 1 | 1 | 1 | 1 |
-| RU | 1 | 1 | 1 | 1 |
-| RS | 1 | 0 | 1 | 0 |
-| MA | 1 | 0 | 0 | 0 |
+**Europe: stations by country.** DE 107, FR 86, ES 70, BE 40, PL 40, AT 35, CZ 28, NL 28, SK 27, SE 23, NO 21, RO 21, HU 20, IT 20, BG 18, FI 14, GR 13, MK 12, SI 11, GB 10, PT 10, HR 9, RS 9, CH 8, CY 8, BA 5, IS 5, LT 5, LV 5, LU 4, TR 4, EE 3, MA 2, AD 1, ME 1, RU 1.
 
-**Asia: coverage by country** (candidates downloaded / at 80% or better / at 70% or better / selected)
-
-| Country | Downloaded | ≥80% | ≥70% | Selected |
-|---|---:|---:|---:|---:|
-| JP | 182 | 158 | 176 | 98 |
-| KR | 141 | 124 | 134 | 85 |
-| IN | 118 | 0 | 64 | 59 |
-| TH | 90 | 17 | 59 | 57 |
-| TW | 51 | 48 | 50 | 50 |
-| LA | 45 | 6 | 30 | 30 |
-| KZ | 31 | 1 | 1 | 1 |
-| HK | 18 | 17 | 18 | 18 |
-| PH | 16 | 3 | 6 | 6 |
-| CN | 7 | 2 | 3 | 3 |
-| SG | 4 | 2 | 4 | 4 |
-| ID | 4 | 0 | 0 | 0 |
-| PK | 4 | 1 | 1 | 1 |
-| TJ | 3 | 1 | 1 | 1 |
-| MY | 3 | 2 | 3 | 3 |
-| KP | 2 | 2 | 2 | 2 |
-| VN | 2 | 1 | 1 | 1 |
-| MM | 1 | 0 | 1 | 1 |
-| LK | 1 | 0 | 0 | 0 |
-| NP | 1 | 1 | 1 | 1 |
-| MV | 1 | 1 | 1 | 1 |
-| KH | 1 | 0 | 1 | 1 |
+**Asia: stations by country.** JP 98, KR 85, IN 59, TH 57, TW 50, LA 30, HK 18, PH 6, SG 4, CN 3, MY 3, KP 2, KH 1, KZ 1, MM 1, MV 1, NP 1, PK 1, TJ 1, VN 1.
 <!-- results:quality:end -->
 
 Notes:
 
-- Europe's negative count is large because several networks publish small negative values for clean air
-  (instrument noise around zero); they are dropped, not clipped.
-- Asia's 192,795 rows above 2,000 µg/m³ are error codes (values such as 9999), concentrated in a few feeds.
+- This run restored its data stage from a checkpoint, so the cleaning step's counts (rows read, readings
+  dropped, hours removed as flat lines or spikes) were not written out. Everything about the selected
+  stations is recomputed from the processed data.
+- Negative readings are dropped, not clipped; values above 2,000 µg/m³ are treated as error codes.
 - The flat-line rule (identical value for 12 hours or more) also removes some genuine calm periods at
-  stations that report whole numbers. The rule is kept on purpose; its cost is visible in the counts.
+  stations that report whole numbers. The rule is kept on purpose.
 - Gaps of up to 3 hours are linearly interpolated for model inputs. Interpolated hours are never used as
   targets in training or scoring.
-- Station type is unknown: the archive CSVs carry no provider field, so reference monitors and low-cost
-  sensors are mixed.
+- EEA stations carry a station type and area; OpenAQ stations do not, so in Asia and for the 78 OpenAQ
+  stations in Europe, reference monitors and low-cost sensors are mixed.
 
 ### Graphs
 
-See `results/graph.json`. Europe: 420 stations, 3,248 directed edges, median edge 65 km, 2 stations with no
+See `results/graph.json`. Europe: 724 stations, 5,677 directed edges, median edge 74 km, 1 station with no
 neighbour within 300 km. Asia: 423 stations, 3,217 edges, median edge 82 km (mean 109 km), 7 stations with
 no neighbour within 500 km.
 
@@ -185,18 +120,18 @@ used validation data.
 
 | Model | 1 h | 3 h | 6 h | 12 h | 24 h | Skill vs persistence at 24 h |
 |---|---:|---:|---:|---:|---:|---:|
-| Plume graph model | 1.04 ±0.00 | **1.71 ±0.00** | **2.15 ±0.01** | **2.52 ±0.01** | **2.81 ±0.01** | +17.9% |
-| LightGBM (no graph) | **1.04** | 1.78 | 2.27 | 2.60 | 2.83 | +17.6% |
-| Persistence | 1.11 | 2.10 | 2.87 | 3.41 | 3.43 | reference |
-| Seasonal naive | 3.31 | 3.36 | 3.40 | 3.42 | 3.43 | +0.0% |
-| CAMS via Open-Meteo | 3.29 | 3.29 | 3.29 | 3.29 | 3.29 | +4.1% |
+| Plume graph model | 1.35 ±0.00 | **2.01 ±0.00** | **2.38 ±0.00** | **2.69 ±0.00** | **2.99 ±0.01** | +18.4% |
+| LightGBM (no graph) | **1.35** | 2.10 | 2.50 | 2.79 | 3.02 | +17.5% |
+| Persistence | 1.47 | 2.54 | 3.31 | 3.78 | 3.67 | reference |
+| Seasonal naive | 3.62 | 3.64 | 3.65 | 3.66 | 3.67 | +0.0% |
+| CAMS via Open-Meteo | 3.58 | 3.59 | 3.59 | 3.59 | 3.59 | +2.1% |
 
 **Asia** (MAE, µg/m³, test period; chosen model: shared)
 
 | Model | 1 h | 3 h | 6 h | 12 h | 24 h | Skill vs persistence at 24 h |
 |---|---:|---:|---:|---:|---:|---:|
-| Plume graph model | **2.47 ±0.00** | **3.61 ±0.02** | **4.20 ±0.02** | **4.66 ±0.02** | **5.09 ±0.00** | +14.7% |
-| LightGBM (no graph) | 2.49 | 3.73 | 4.33 | 4.76 | 5.18 | +13.3% |
+| Plume graph model | **2.43 ±0.01** | **3.52 ±0.01** | **4.08 ±0.01** | **4.57 ±0.01** | **5.05 ±0.01** | +15.4% |
+| LightGBM (no graph) | 2.46 | 3.69 | 4.28 | 4.73 | 5.17 | +13.4% |
 | Persistence | 2.63 | 4.28 | 5.36 | 5.95 | 5.98 | reference |
 | Seasonal naive | 5.76 | 5.85 | 5.91 | 5.94 | 5.98 | +0.0% |
 | CAMS via Open-Meteo | 9.47 | 9.47 | 9.47 | 9.47 | 9.46 | -58.4% |
@@ -210,18 +145,18 @@ used validation data.
 
 | Model | 1 h | 3 h | 6 h | 12 h | 24 h | Skill vs persistence at 24 h |
 |---|---:|---:|---:|---:|---:|---:|
-| Plume graph model | 2.66 ±0.02 | **3.83 ±0.01** | **4.36 ±0.01** | **4.74 ±0.01** | 5.07 ±0.00 |  |
-| LightGBM (no graph) | **2.66** | 3.90 | 4.50 | 4.85 | **5.06** |  |
-| Persistence | 2.87 | 4.69 | 5.73 | 6.37 | 6.33 |  |
-| Seasonal naive | 6.10 | 6.21 | 6.28 | 6.36 | 6.33 |  |
-| CAMS via Open-Meteo | 6.82 | 6.82 | 6.82 | 6.82 | 6.80 |  |
+| Plume graph model | **3.11 ±0.01** | **4.25 ±0.02** | **4.70 ±0.01** | **5.06 ±0.01** | **5.35 ±0.01** |  |
+| LightGBM (no graph) | 3.11 | 4.32 | 4.85 | 5.18 | 5.38 |  |
+| Persistence | 3.37 | 5.24 | 6.33 | 6.91 | 6.64 |  |
+| Seasonal naive | 6.59 | 6.65 | 6.65 | 6.66 | 6.64 |  |
+| CAMS via Open-Meteo | 6.94 | 6.94 | 6.94 | 6.93 | 6.89 |  |
 
 **Asia** (RMSE, µg/m³, test period; chosen model: shared)
 
 | Model | 1 h | 3 h | 6 h | 12 h | 24 h | Skill vs persistence at 24 h |
 |---|---:|---:|---:|---:|---:|---:|
-| Plume graph model | **6.67 ±0.03** | **9.44 ±0.04** | **10.54 ±0.01** | **10.99 ±0.01** | **11.28 ±0.00** |  |
-| LightGBM (no graph) | 6.68 | 9.58 | 10.77 | 11.37 | 11.60 |  |
+| Plume graph model | 6.70 ±0.01 | **9.44 ±0.08** | **10.44 ±0.08** | **10.90 ±0.09** | **11.22 ±0.01** |  |
+| LightGBM (no graph) | **6.64** | 9.56 | 10.73 | 11.42 | 11.63 |  |
 | Persistence | 7.09 | 11.05 | 13.27 | 14.24 | 13.48 |  |
 | Seasonal naive | 13.07 | 13.18 | 13.28 | 13.32 | 13.48 |  |
 | CAMS via Open-Meteo | 18.97 | 18.97 | 18.97 | 18.97 | 18.97 |  |
@@ -229,13 +164,13 @@ used validation data.
 <!-- results:rmse:end -->
 
 **Reading.** In both regions the graph model and LightGBM are far ahead of the three simple baselines and
-close to each other. The graph model's advantage over LightGBM is largest in the middle horizons (Europe 6 h:
-2.15 against 2.27; Asia 6 h: 4.20 against 4.33) and vanishes at 1 h, where both are barely better than
-persistence. On RMSE, LightGBM is ahead at 1 h in both regions and level at 24 h in Europe.
+close to each other. The graph model's advantage is largest in the middle horizons (Europe 6 h: 2.38
+against 2.50; Asia 6 h: 4.08 against 4.28) and vanishes at 1 h. On RMSE, LightGBM is level at 1 h in Europe
+and ahead at 1 h in Asia (6.64 against 6.70).
 
-Model selection: the shared model had the lower validation MAE in both regions (Europe 2.406 against 2.427
-per-region; Asia 4.911 against 4.932), so it is the model reported and shipped. On test the order is the
-same. The shared model's seed spread is larger than the per-region model's.
+Model selection: the shared model had the lower validation error in both regions (Europe 2.483 against
+2.496 per-region; Asia 4.819 against 4.863), so it is the model reported and shipped. On test the order is
+the same.
 
 Seasonal naive is no better than persistence at 24 h in either region. CAMS global is much worse than
 persistence in Asia at every horizon; that says as much about a 0.4° grid average against point sensors,
@@ -246,74 +181,155 @@ many of them roadside or low-cost, as about CAMS. Neither CAMS series is bias-co
 <!-- results:ablation:start -->
 | Region | Variant | Seeds | Mean MAE over 24 horizons | 1 h | 6 h | 24 h | vs no graph |
 |---|---|---:|---:|---:|---:|---:|---:|
-| Europe (median edge 65 km) | No graph | 3 | 2.503 ±0.009 | 1.08 ±0.00 | 2.34 ±0.01 | 2.90 ±0.01 | reference |
-| Europe (median edge 65 km) | Distance-only edges | 3 | 2.399 ±0.001 | 1.05 ±0.00 | 2.19 ±0.00 | 2.81 ±0.00 | -4.16% |
-| Europe (median edge 65 km) | Wind-aware edges | 3 | 2.393 ±0.001 | 1.04 ±0.00 | 2.18 ±0.01 | 2.81 ±0.00 | -4.41% |
-| Asia (median edge 82 km) | No graph | 3 | 4.643 ±0.011 | 2.53 ±0.01 | 4.39 ±0.02 | 5.23 ±0.00 | reference |
-| Asia (median edge 82 km) | Distance-only edges | 3 | 4.508 ±0.008 | 2.47 ±0.00 | 4.23 ±0.01 | 5.10 ±0.01 | -2.92% |
-| Asia (median edge 82 km) | Wind-aware edges | 3 | 4.502 ±0.004 | 2.47 ±0.00 | 4.22 ±0.02 | 5.10 ±0.00 | -3.05% |
+| Europe (median edge 74 km) | No graph | 3 | 2.700 ±0.003 | 1.39 ±0.00 | 2.54 ±0.01 | 3.07 ±0.00 | reference |
+| Europe (median edge 74 km) | Distance-only edges | 3 | 2.599 ±0.001 | 1.36 ±0.00 | 2.41 ±0.00 | 2.99 ±0.00 | -3.76% |
+| Europe (median edge 74 km) | Wind-aware edges | 3 | 2.600 ±0.005 | 1.36 ±0.00 | 2.41 ±0.01 | 3.00 ±0.01 | -3.70% |
+| Asia (median edge 82 km) | No graph | 3 | 4.576 ±0.008 | 2.50 ±0.01 | 4.28 ±0.01 | 5.21 ±0.00 | reference |
+| Asia (median edge 82 km) | Distance-only edges | 3 | 4.440 ±0.007 | 2.45 ±0.00 | 4.13 ±0.01 | 5.07 ±0.00 | -2.97% |
+| Asia (median edge 82 km) | Wind-aware edges | 3 | 4.434 ±0.010 | 2.45 ±0.00 | 4.12 ±0.01 | 5.07 ±0.01 | -3.10% |
 <!-- results:ablation:end -->
 
 **Reading.** The ablation uses the per-region models, three seeds per variant.
 
-- Message passing helps in both regions, well outside the seed spread: 4.2 to 4.4% lower MAE in Europe,
-  2.9 to 3.1% in Asia.
-- The wind feature on top of distance-only edges is worth 0.006 µg/m³ in each region (0.25% in Europe, 0.13%
-  in Asia). In Europe that is larger than the seed standard deviations (0.001); in Asia it is not (0.004 and
-  0.008). Either way it is too small to matter.
-- The hypothesis that wind-aware edges help more where the network is sparse is not supported. The graph
-  helps more in the denser region, and the wind increment is the same in both.
+- Message passing helps in both regions, well outside the seed spread: 3.7% lower error in Europe and 3.0%
+  in Asia.
+- Wind-aware edges on top of distance-only edges: Europe 2.600 against 2.599, Asia 4.434 against 4.440.
+  Both differences are inside the seed spread. The wind feature on the edges adds nothing measurable.
+- The graph helps a little more in the denser region (Europe, median edge 74 km) than in the sparser one.
 
 Possible reasons, none tested: the node features already contain local wind, so the network can infer
-transport without the edge feature; hourly station PM2.5 in late summer is dominated by local sources and
-the daily cycle; edges of 65 to 82 km are short enough that neighbours are informative whatever the wind.
+transport without the edge feature; hourly station PM2.5 is dominated by local sources and the daily cycle;
+edges of 74 to 82 km are short enough that neighbours are informative whatever the wind.
 
 ### 3. Calibration
 
 <!-- results:calibration:start -->
 | Region | 1 h | 3 h | 6 h | 12 h | 24 h | Mean over 24 h | Below P10 | Above P90 |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
-| Europe | 82.9% | 81.5% | 80.7% | 80.9% | 81.2% | 81.0% | 10.6% | 8.4% |
-| Asia | 78.9% | 79.5% | 80.1% | 80.7% | 81.0% | 80.4% | 10.4% | 9.2% |
+| Europe | 81.1% | 81.0% | 80.8% | 80.8% | 80.9% | 80.8% | 10.5% | 8.6% |
+| Asia | 79.2% | 79.9% | 80.3% | 80.5% | 80.7% | 80.3% | 10.0% | 9.8% |
 <!-- results:calibration:end -->
 
-**Reading.** Coverage is within 3 points of the 80% target at every reported horizon in both regions. The misses are
-not symmetric: more measurements fall below P10 (10.4 to 10.6%) than above P90 (8.4 to 9.2%), so the band
-sits slightly high. In Asia the band is a little too narrow at 1 h (78.9%). No recalibration was applied.
+**Reading.** Coverage is within 1 point of the 80% target at every reported horizon in both regions. The
+misses are not symmetric in Europe: 10.5% of measurements fall below P10 and 8.6% above P90, so the band
+sits slightly high. In Asia the band is a little narrow at 1 h (79.2%). No recalibration was applied.
 
 ### 4. Unseen stations
 
 <!-- results:unseen:start -->
 | Region | Method | 1 h | 3 h | 6 h | 12 h | 24 h |
 |---|---|---:|---:|---:|---:|---:|
-| Europe (63 held out) | Graph model, own history masked | 3.26 | 3.38 | 3.57 | 3.88 | 4.21 |
-| Europe (63 held out) | Inverse-distance of neighbours' last values | 3.16 | 3.48 | 3.89 | 4.24 | 4.42 |
-| Europe (63 held out) | Inverse-distance of neighbours' forecasts | 3.08 | 3.22 | 3.47 | 3.73 | 4.02 |
-| Asia (63 held out) | Graph model, own history masked | 5.41 | 5.48 | 5.56 | 5.79 | 6.00 |
+| Europe (109 held out) | Graph model, own history masked | 2.84 | 2.94 | 3.12 | 3.31 | 3.55 |
+| Europe (109 held out) | Inverse-distance of neighbours' last values | 2.97 | 3.28 | 3.69 | 3.96 | 4.04 |
+| Europe (109 held out) | Inverse-distance of neighbours' forecasts | 2.84 | 2.90 | 3.07 | 3.28 | 3.56 |
+| Asia (63 held out) | Graph model, own history masked | 5.36 | 5.44 | 5.51 | 5.69 | 6.01 |
 | Asia (63 held out) | Inverse-distance of neighbours' last values | 6.09 | 6.31 | 6.59 | 6.71 | 6.93 |
-| Asia (63 held out) | Inverse-distance of neighbours' forecasts | 5.87 | 5.90 | 5.89 | 6.08 | 6.31 |
+| Asia (63 held out) | Inverse-distance of neighbours' forecasts | 5.82 | 5.81 | 5.88 | 6.05 | 6.32 |
 <!-- results:unseen:end -->
 
-**Reading.** 63 stations per region (15%) were removed from training, and at test time their own PM2.5
-history is masked, so the model sees only their weather, position and neighbours. One seed. 61 of the 63 in
-each region have a neighbour in range.
+**Reading.** 15% of stations were removed from training (109 in Europe, 63 in Asia), and at test time their
+own PM2.5 history is masked, so the model sees only their weather, position and neighbours. One seed.
 
-- **Asia:** the graph model is better than both interpolation baselines at every horizon (mean MAE over 24
-  horizons 5.75, against 6.09 for inverse-distance weighting of the neighbours' forecasts and 6.73 for
-  their last values).
-- **Europe:** the graph model beats interpolation of last values on average (3.84 against 4.12, though not
-  at 1 h: 3.26 against 3.16) and loses to
-  interpolation of the neighbours' forecasts (3.68) at every reported horizon. In a dense network, averaging
-  nearby forecasts is the better way to fill in a station the model has never seen.
+- **Asia:** the graph model is better than both interpolation baselines (mean error over 24 horizons 5.71,
+  against 6.06 for inverse-distance weighting of the neighbours' forecasts and 6.73 for their last values).
+- **Europe:** the graph model beats interpolation of last values (3.29 against 3.86) and loses to
+  interpolation of the neighbours' forecasts (3.26), by a small margin. In a dense network, averaging nearby
+  forecasts is at least as good a way to fill in a station the model has never seen.
 
-Errors at unseen stations are about 60% (Europe) and 30% (Asia) higher than the main model's error over
-all stations; the station sets differ, so this is a rough comparison.
-P10 to P90 coverage at the held-out stations averages 80.1% in Europe and 79.1% in Asia.
+P10 to P90 coverage at the held-out stations averages 79.9% in Europe and 78.7% in Asia.
 
 ### 5. Seeds
 
-The graph-model rows above are the mean ± standard deviation over seeds 0, 1 and 2. Per-seed mean MAE is in
+The graph-model rows above are the mean ± standard deviation over seeds 0, 1 and 2. Per-seed error is in
 `results/main.json` under `mae_per_seed`.
+
+### 6. Winter test
+
+<!-- results:winter:start -->
+**Europe** (MAE, µg/m³, December 2025 to February 2026; models trained on data to August 2025)
+
+| Model | 1 h | 3 h | 6 h | 12 h | 24 h | Skill vs persistence at 24 h |
+|---|---:|---:|---:|---:|---:|---:|
+| Plume graph model | 2.55 ±0.00 | **4.10 ±0.00** | **5.17 ±0.01** | **6.15 ±0.00** | 7.10 ±0.01 | +14.8% |
+| LightGBM (no graph) | **2.54** | 4.17 | 5.29 | 6.25 | **7.07** | +15.1% |
+| Persistence | 2.69 | 4.83 | 6.60 | 7.98 | 8.32 | reference |
+| Seasonal naive | 8.25 | 8.27 | 8.30 | 8.31 | 8.32 | +0.0% |
+| CAMS via Open-Meteo | 7.99 | 7.99 | 7.99 | 7.98 | 7.97 | +4.2% |
+
+**Asia** (MAE, µg/m³, December 2025 to February 2026; models trained on data to August 2025)
+
+| Model | 1 h | 3 h | 6 h | 12 h | 24 h | Skill vs persistence at 24 h |
+|---|---:|---:|---:|---:|---:|---:|
+| Plume graph model | 3.53 ±0.02 | **5.70 ±0.05** | **7.06 ±0.06** | **7.86 ±0.05** | **8.48 ±0.07** | +15.0% |
+| LightGBM (no graph) | **3.48** | 5.80 | 7.13 | 7.91 | 8.49 | +14.8% |
+| Persistence | 3.75 | 6.82 | 9.14 | 10.22 | 9.97 | reference |
+| Seasonal naive | 9.76 | 9.86 | 9.93 | 9.97 | 9.97 | +0.0% |
+| CAMS via Open-Meteo | 13.31 | 13.30 | 13.29 | 13.26 | 13.22 | -32.6% |
+
+<!-- results:winter:end -->
+
+**Reading.** These models never saw the winter they are tested on: they are trained on data to August 2025
+and validated on September to November 2025. Errors are much higher than in summer (more than twice in
+Europe, 1.7 times in Asia), as PM2.5 is. The graph model is still the most accurate over all horizons, but
+its lead over LightGBM shrinks to 1.2% in Europe and 0.6% in Asia, and at 24 h LightGBM is level or
+slightly ahead (Europe 7.07 against 7.10). LightGBM and the graph model both beat persistence
+by about 15% at 24 h. The winter models are per-region; ten months of training data, rather than eighteen,
+also hold them back, so these numbers are not comparable with the main table.
+
+### 7. India
+
+<!-- results:india:start -->
+**India, 59 stations** (MAE, µg/m³, August to October 2026)
+
+| Model | 1 h | 3 h | 6 h | 12 h | 24 h | Skill vs persistence at 24 h |
+|---|---:|---:|---:|---:|---:|---:|
+| Plume graph model | 3.88 ±0.02 | **6.41 ±0.01** | **7.34 ±0.02** | **7.94 ±0.01** | **8.42 ±0.02** | +12.2% |
+| LightGBM (no graph) | **3.79** | 6.53 | 7.58 | 8.05 | 8.46 | +11.7% |
+| Persistence | 4.14 | 7.83 | 9.96 | 10.84 | 9.59 | reference |
+| Seasonal naive | 8.91 | 9.26 | 9.48 | 9.51 | 9.59 | +0.0% |
+| CAMS via Open-Meteo | 16.86 | 16.86 | 16.88 | 16.88 | 16.91 | -76.5% |
+
+**India, 59 stations** (MAE, µg/m³, December 2025 to February 2026, models trained on data to August 2025)
+
+| Model | 1 h | 3 h | 6 h | 12 h | 24 h | Skill vs persistence at 24 h |
+|---|---:|---:|---:|---:|---:|---:|
+| Plume graph model | 8.25 ±0.03 | 15.27 ±0.15 | 18.83 ±0.22 | 19.15 ±0.27 | **18.54 ±0.53** | +7.3% |
+| LightGBM (no graph) | **7.93** | **14.97** | **18.44** | **19.06** | 18.66 | +6.7% |
+| Persistence | 8.83 | 18.45 | 25.00 | 25.10 | 19.99 | reference |
+| Seasonal naive | 18.71 | 19.36 | 19.77 | 19.94 | 19.99 | +0.0% |
+| CAMS via Open-Meteo | 33.69 | 33.69 | 33.66 | 33.63 | 33.60 | -68.0% |
+
+<!-- results:india:end -->
+
+**Reading.** 59 Indian stations inside the Asian model. In the summer test the graph model is ahead of
+LightGBM (7.62 against 7.72). In winter, when Indian PM2.5 is highest, LightGBM is better over all horizons
+(17.86 against 18.01), though the graph model is ahead at 24 h. Both beat persistence by about 24% over all
+horizons but only by about 7% at 24 h. The winter models had no Indian winter to learn from:
+OpenAQ's archive lacks Indian data for November 2024 to February 2025.
+
+### 8. Station types (Europe)
+
+<!-- results:types:start -->
+| Station type | Stations | Period | Plume 1 h | Plume 24 h | LightGBM 24 h | Persistence 24 h | Plume skill at 24 h |
+|---|---:|---|---:|---:|---:|---:|---:|
+| Background | 435 | Aug to Oct 2026 | 1.26 | 2.87 | 2.92 | 3.56 | +19.2% |
+| Background | 435 | Dec 2025 to Feb 2026 | 2.36 | 6.83 | 6.80 | 8.01 | +14.7% |
+| Traffic | 154 | Aug to Oct 2026 | 1.45 | 3.14 | 3.17 | 3.86 | +18.8% |
+| Traffic | 154 | Dec 2025 to Feb 2026 | 2.74 | 7.47 | 7.46 | 8.72 | +14.3% |
+| Industrial | 57 | Aug to Oct 2026 | 1.41 | 3.03 | 3.05 | 3.68 | +17.8% |
+| Industrial | 57 | Dec 2025 to Feb 2026 | 2.28 | 5.87 | 5.90 | 6.97 | +15.7% |
+<!-- results:types:end -->
+
+**Reading.** Only EEA stations carry a type. The graph model leads LightGBM at all three types in both test
+periods. In the summer test traffic stations are the hardest to forecast and background stations the
+easiest; in winter industrial stations have the lowest error.
+
+### 9. Tuning
+
+Four settings of the graph model were compared on validation loss (base: hidden 64, 2 layers, 6 epochs;
+hidden 128; 3 layers; 10 epochs). Ten epochs won (0.333 against 0.343 for the base) and clears the 1%
+threshold, so every final run trained for ten epochs. For LightGBM, 255 leaves with a learning rate of 0.06
+and up to 500 trees won in both regions. Scores are in `results/tuning.json` and `results/baselines.json`.
 
 ## Failures and abandoned approaches
 
@@ -329,17 +345,21 @@ The graph-model rows above are the mean ± standard deviation over seeds 0, 1 an
 - **Shortlisting by daily file count.** A station with a file every day can still have two hours in each
   file. The first European shortlist (743 stations) produced only 316 above 80% hourly coverage, so all
   1,475 European candidates were downloaded.
-- **Hyperparameter tuning.** Three trial runs were killed by a machine restart after one epoch. What they
-  showed (validation pinball loss 0.299 to 0.302) was inside the noise. The model is effectively untuned.
+- **Hyperparameter tuning in the first run.** Three trial runs were killed by a machine restart after one
+  epoch. Tuning was done properly in this run (section 9).
 - **A machine restart killed the first training batch** three hours into the build; nothing on disk was
   lost, but all in-flight runs were. Training now goes through a queue that skips finished runs.
 - **Oracle-weather variant: not run.** It was optional and was dropped for time.
 - **NASA image hosts** (`eoimages.gsfc.nasa.gov`) reset connections through the proxy; the texture comes from
   NASA GIBS instead.
+- **Kaggle checkpoints that never restored.** Kaggle unpacks uploaded `.tar` files and refuses to send a large
+  dataset as one download, so two training sessions restarted from scratch before the notebook was changed
+  to name its checkpoints `.ckpt` and fetch them file by file. LightGBM also restarted from zero at each
+  12-hour limit until it saved each finished horizon. The suite needed three Kaggle sessions.
 
 ## Limitations
 
-- Three months of test data with no winter. PM2.5 peaks in winter in both regions; nothing here measures that.
+- The winter test uses models trained on ten months of data, and Indian stations have no winter in training.
 - The replay in the app covers the last 56 days of the test period with forecasts issued every 6 hours.
   Reported metrics use every hourly origin of the full three months.
 - "Asia" is Japan, Korea, India, Thailand, Taiwan, Laos, Hong Kong and a handful of others. China is nearly
@@ -348,11 +368,11 @@ The graph-model rows above are the mean ± standard deviation over seeds 0, 1 an
 - Weather inputs are reanalysis. A live system would have forecasts and slightly worse recent analyses.
 - CAMS comparisons favour CAMS at long horizons (short-lead stitched series) and penalise it for being a grid
   average compared with a point; the two regions use different CAMS products.
-- Low-cost sensors and reference monitors are mixed and cannot be told apart.
+- Outside the EEA stations, low-cost sensors and reference monitors are mixed and cannot be told apart.
 - Machine romanisation of Japanese, Korean, Chinese and Thai station names is rough.
-- Frame rate was measured on one laptop GPU only (an RTX 3050 Ti); slower integrated graphics are untested. See Verification.
+- Frame rate was measured on one laptop GPU only (an RTX 3050 Ti); slower integrated graphics are untested.
 - City labels come from the nearest GeoNames city, so a station near a border can carry a city from the
-  other side (the watchlist shows "Shenzhen HK" for a Hong Kong station close to Shenzhen).
+  other side.
 
 ## Verification
 

@@ -99,3 +99,12 @@ Notes behind the scores:
 - **Methods screenshots are stitched from viewport captures.** Software WebGL in the container wraps a single capture taller than 8,192 px.
 - **Frame rate is reported as measured under software rendering**, labelled as such, because no GPU is available here.
 - **A second frame-rate measurement on a real GPU** (`qa/fps.cjs --gpu`, a laptop RTX 3050 Ti at 144 Hz) was added later. It uses the installed Chrome in a visible window, because headless Chromium falls back to software rendering. The browser caps frames at the display rate, so the result shows the globe keeps up with a 144 Hz screen, not its ceiling.
+
+## Second run (EEA stations, fires, tuning, winter)
+
+- **The shared model is again the reported model in both regions.** Validation error: Europe 2.483 against 2.496 for the per-region model, Asia 4.819 against 4.863. Same rule as the first run, applied before the test numbers were read.
+- **Ten epochs, chosen by the tuning stage.** It beat the base setting by 2.8% on validation loss, above the 1% bar, so every final run trained for ten epochs instead of six. That made the suite take three Kaggle sessions.
+- **Winter numbers are reported as they came out.** The graph model's lead over LightGBM shrinks to 1.2% (Europe) and 0.6% (Asia), and LightGBM is better at Indian stations in winter. Both are stated in the README and the report rather than left to the tables.
+- **The data-quality cleaning counts are marked "not recorded" for this run.** The data stage was restored from a checkpoint, so `prepare` did not run and its counts were never written. They are not carried over from the first run, which had different stations. Station-level figures are recomputed from the processed data (`ml/tools/quality_from_processed.py`), and `results/graph.json` from the exported app data (`ml/tools/graph_from_export.py`).
+- **Kaggle checkpoints are `.ckpt` files fetched one by one.** Kaggle unpacks uploaded `.tar` files and will not send a large dataset as a single download; both cost a session before they were found.
+- **LightGBM saves each finished horizon and uses two threads.** It is the longest job in the queue, and a 12-hour cutoff used to discard all of it.

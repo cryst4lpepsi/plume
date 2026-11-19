@@ -8,6 +8,7 @@ import calibration from '@results/calibration.json'
 import unseen from '@results/unseen.json'
 import quality from '@results/data_quality.json'
 import graph from '@results/graph.json'
+import winter from '@results/winter.json'
 
 /* Every number on this page is read from results/*.json. Prose that depends on a result is chosen
    by comparing those numbers, so the text cannot drift from the files. */
@@ -19,11 +20,14 @@ const CAL = calibration as unknown as Record<'europe' | 'asia', { coverage_p10_p
 const UN = unseen as unknown as Record<'europe' | 'asia', { held_out: number; held_out_with_neighbour_in_range: number; coverage_p10_p90: number[]; graph_model_masked: M; idw_of_neighbour_last_obs: M; idw_of_neighbour_forecasts?: M } | undefined>
 const Q = quality as unknown as Record<'europe' | 'asia', Record<string, any>>
 const G = graph as unknown as Record<'europe' | 'asia', Record<string, number>>
+const W = winter as unknown as Record<'europe' | 'asia', Record<string, M> | null>
 const REG = ['europe', 'asia'] as const
 const NAME = { europe: 'Europe', asia: 'Asia' }
 const HS = [1, 3, 6, 12, 24]
 const MODELS: [string, string][] = [['plume', 'Plume graph model'], ['lightgbm', 'LightGBM, same features, no graph'], ['persistence', 'Persistence'], ['seasonal_naive', 'Seasonal naive (same hour yesterday)'], ['cams', 'CAMS via Open-Meteo']]
 const n0 = (v: number) => v.toLocaleString('en-GB')
+// cleaning counts are missing for a run that restored its data stage from a checkpoint (see data_quality.json)
+const nr = (v: number | undefined) => (v == null ? 'not recorded' : n0(v))
 const pct = (v: number, d = 0) => `${(v * 100).toFixed(d)}%`
 const mean = (a: number[]) => a.reduce((x, y) => x + y, 0) / a.length
 
@@ -114,22 +118,22 @@ export default function MethodsView() {
 
         <section>
           <h2>Data</h2>
-          <p>Observations come from the OpenAQ archive on AWS Open Data, which redistributes measurements from many national and local providers under their own licences. The period is the 24 complete months to October 2026, split by time: 18 months to train, 3 to validate (May to July 2026), 3 to test (August to October 2026). Nothing is shuffled across time.</p>
+          <p>European observations come mainly from the European Environment Agency, whose national networks also say whether a station is background, traffic or industrial. The rest, and all of Asia, come from the OpenAQ archive on AWS Open Data, which redistributes measurements from many national and local providers under their own licences. Satellite fire detections (NASA FIRMS) are an input: the fire power within 100 and 300 km of each station over the previous day. The period is the 24 complete months to October 2026, split by time: 18 months to train, 3 to validate (May to July 2026), 3 to test (August to October 2026). Nothing is shuffled across time.</p>
           <div className="table-wrap">
             <table className="mt">
               <caption><span>Station selection and cleaning, per region.</span></caption>
               <thead><tr><th scope="col"><span className="sr-only">Measure</span></th><th scope="col">Europe</th><th scope="col">Asia</th></tr></thead>
               <tbody>
-                <tr><th scope="row">Candidate stations downloaded</th>{REG.map((r) => <td key={r}>{n0(Q[r].candidates_downloaded)}</td>)}</tr>
+                <tr><th scope="row">Candidate stations downloaded</th>{REG.map((r) => <td key={r}>{nr(Q[r].candidates_downloaded)}</td>)}</tr>
                 <tr><th scope="row">Coverage threshold (share of hours)</th>{REG.map((r) => <td key={r}>{pct(Q[r].coverage_threshold)}</td>)}</tr>
-                <tr><th scope="row">Candidates passing</th>{REG.map((r) => <td key={r}>{n0(Q[r].candidates_ge_threshold)}</td>)}</tr>
+                <tr><th scope="row">Candidates passing</th>{REG.map((r) => <td key={r}>{nr(Q[r].candidates_ge_threshold)}</td>)}</tr>
                 <tr><th scope="row">Stations used</th>{REG.map((r) => <td key={r}>{n0(Q[r].stations)}</td>)}</tr>
                 <tr><th scope="row">Countries</th>{REG.map((r) => <td key={r}>{Object.keys(Q[r].per_country).length}</td>)}</tr>
                 <tr><th scope="row">Median station coverage</th>{REG.map((r) => <td key={r}>{pct(Q[r].median_station_coverage, 1)}</td>)}</tr>
-                <tr><th scope="row">Negative readings dropped</th>{REG.map((r) => <td key={r}>{n0(Q[r].dropped_negative_rows)}</td>)}</tr>
-                <tr><th scope="row">Readings above 2,000 µg/m³ dropped</th>{REG.map((r) => <td key={r}>{n0(Q[r].dropped_over_2000_rows)}</td>)}</tr>
-                <tr><th scope="row">Flat-lined hours removed (12 h or more)</th>{REG.map((r) => <td key={r}>{n0(Q[r].removed_flatline_hours)}</td>)}</tr>
-                <tr><th scope="row">Single-hour spikes removed</th>{REG.map((r) => <td key={r}>{n0(Q[r].removed_spike_hours)}</td>)}</tr>
+                <tr><th scope="row">Negative readings dropped</th>{REG.map((r) => <td key={r}>{nr(Q[r].dropped_negative_rows)}</td>)}</tr>
+                <tr><th scope="row">Readings above 2,000 µg/m³ dropped</th>{REG.map((r) => <td key={r}>{nr(Q[r].dropped_over_2000_rows)}</td>)}</tr>
+                <tr><th scope="row">Flat-lined hours removed (12 h or more)</th>{REG.map((r) => <td key={r}>{nr(Q[r].removed_flatline_hours)}</td>)}</tr>
+                <tr><th scope="row">Single-hour spikes removed</th>{REG.map((r) => <td key={r}>{nr(Q[r].removed_spike_hours)}</td>)}</tr>
                 <tr><th scope="row">Hours filled by interpolation (gaps of 3 h or less)</th>{REG.map((r) => <td key={r}>{pct(Q[r].interpolated_short_gap_hours / Q[r].station_hours, 1)}</td>)}</tr>
                 <tr><th scope="row">Hours left missing and masked in the loss</th>{REG.map((r) => <td key={r}>{pct(Q[r].missing_hours / Q[r].station_hours, 1)}</td>)}</tr>
               </tbody>
@@ -228,12 +232,38 @@ export default function MethodsView() {
           </section>
         )}
 
+        {(W.europe || W.asia) && (
+          <section>
+            <h2>Winter</h2>
+            <p>The main test has no winter, when PM2.5 is highest. A second set of models was trained on data to August 2025 only and tested on December 2025 to February 2026. {REG.filter((r) => W[r]?.plume && W[r]?.lightgbm).map((r) => { const p = W[r]!.plume.mae_all, l = W[r]!.lightgbm.mae_all; return `${NAME[r]}: the graph model's mean error is ${p.toFixed(2)} against ${l.toFixed(2)} for LightGBM (${p < l ? `${((1 - p / l) * 100).toFixed(1)}% lower` : `${((p / l - 1) * 100).toFixed(1)}% higher`}).` }).join(' ')}</p>
+            {REG.filter((r) => W[r]).map((r) => (
+              <div className="table-wrap" key={r}>
+                <table className="mt">
+                  <caption><span>{NAME[r]}, winter test (Dec 2025 to Feb 2026): mean absolute error in µg/m³ by forecast horizon. Lowest value in each column is marked.</span></caption>
+                  <thead><tr><th scope="col">Model</th>{HS.map((h) => <th key={h} scope="col">{h} h</th>)}</tr></thead>
+                  <tbody>
+                    {MODELS.map(([k, name]) => W[r]![k] && (
+                      <tr key={k} className={k === 'plume' ? 'ours' : ''}>
+                        <th scope="row">{name}</th>
+                        {HS.map((h) => {
+                          const best = Math.min(...MODELS.map(([j]) => W[r]![j]?.mae[h - 1] ?? Infinity))
+                          return <td key={h} className={W[r]![k].mae[h - 1] === best ? 'best' : ''}>{W[r]![k].mae[h - 1].toFixed(2)}</td>
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ))}
+          </section>
+        )}
+
         <section>
           <h2>Limitations</h2>
           <ul className="prose-list">
-            <li>The test period is three months, August to October 2026. It contains no winter, when PM2.5 in both regions is highest and hardest. Skill in January is unmeasured.</li>
+            <li>The main test period is three months, August to October 2026, with no winter. The winter test above uses models trained on eight fewer months, so its errors are not comparable with the main table.</li>
             <li>The app is a replay of that test period. Nothing here is a live forecast.</li>
-            <li>Station mix is whatever the archive offers: reference monitors and low-cost sensors side by side, with no provider field to tell them apart. China is nearly absent; India lost four months.</li>
+            <li>Outside the EEA stations, the station mix is whatever the OpenAQ archive offers: reference monitors and low-cost sensors side by side, with no field to tell them apart. China is nearly absent; India lost four months, including its first winter.</li>
             <li>Weather inputs are reanalysis, which is cleaner than the forecasts a live system would have. Only past weather is used, but a live system's "past" would be slightly worse.</li>
             <li>Station names in non-Latin scripts were romanised by machine and are rough, especially Thai names and Japanese street addresses.</li>
             <li>Edge weights shown in the Influence view are what the network attends to. They are not a measurement of where air came from.</li>
@@ -247,7 +277,7 @@ export default function MethodsView() {
             <li><strong>Open-Meteo's HTTP API for weather.</strong> The daily request limit ran out after about 15 full-period calls from a shared address. Weather and CAMS were read from Open-Meteo's open-data files on AWS instead.</li>
             <li><strong>Choosing stations by daily file counts.</strong> The archive has one file per station per day; a file can hold two hours or twenty-four. A first shortlist built on file counts left Europe with 316 usable stations out of 743 downloaded, so every European candidate was downloaded and measured by the hour.</li>
             <li><strong>An 80% coverage threshold in Asia.</strong> It produced a graph of Japan and Korea with no India. See Data.</li>
-            <li><strong>Hyperparameter tuning.</strong> A planned comparison of depth and learning rate was interrupted after one epoch and showed differences inside the noise; the cheapest setting was kept. The model is not tuned.</li>
+            <li><strong>Checkpoints that never came back.</strong> Training ran on Kaggle in 12-hour sessions. Kaggle unpacks uploaded archives and will not send a large dataset as one download, so two sessions started over before the checkpoints were renamed and fetched file by file.</li>
           </ul>
           <p>The full log, including time spent, is in <code>REPORT.md</code>; judgement calls are in <code>DECISIONS.md</code>.</p>
         </section>
@@ -255,7 +285,8 @@ export default function MethodsView() {
         <section id="sources">
           <h2>Sources</h2>
           <ul className="prose-list">
-            <li><strong>Observations:</strong> <a href="https://openaq.org">OpenAQ</a>, open-data archive on AWS. OpenAQ aggregates data from many government and research providers, each under its own licence.</li>
+            <li><strong>Observations:</strong> <a href="https://www.eea.europa.eu/en/datahub">European Environment Agency</a> air-quality download service, and <a href="https://openaq.org">OpenAQ</a>, open-data archive on AWS. OpenAQ aggregates data from many government and research providers, each under its own licence.</li>
+            <li><strong>Fires:</strong> NASA <a href="https://firms.modaps.eosdis.nasa.gov">FIRMS</a>, VIIRS active fires from NOAA-21.</li>
             <li><strong>CAMS baseline and ERA5 weather:</strong> Copernicus Atmosphere Monitoring Service and Copernicus Climate Change Service, via <a href="https://open-meteo.com">Open-Meteo</a>'s open-data distribution.</li>
             <li><strong>Night lights:</strong> NASA Black Marble 2016, served by NASA GIBS. Public domain.</li>
             <li><strong>Coastlines and country borders:</strong> Natural Earth, public domain. <strong>City names:</strong> GeoNames, CC BY 4.0.</li>
