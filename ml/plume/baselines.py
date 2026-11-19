@@ -56,8 +56,9 @@ TUNE_H = (1, 6, 24)
 
 
 def lgb_model(params, seed=0):
+    # two threads: the queue runs four jobs on four cores, and LightGBM is the longest of them
     return lgb.LGBMRegressor(objective="l1", subsample=0.8, subsample_freq=1, colsample_bytree=0.8,
-                             n_jobs=1, random_state=seed, verbose=-1, **params)
+                             n_jobs=2, random_state=seed, verbose=-1, **params)
 
 
 def lgb_split(d, pre=""):
