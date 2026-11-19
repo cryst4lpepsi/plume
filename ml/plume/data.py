@@ -119,11 +119,17 @@ def build(region):
     OUT.mkdir(parents=True, exist_ok=True)
     np.savez(OUT / f"{region}.npz", X=X, pm=pm, observed=valid & ~filled, anchor=anchor, age=age, wind=wind,
              cams=cams.astype(np.float32), lat=lat, lon=lon, src=src, dst=dst, dist=dist, bear=bear)
-    deg = np.bincount(dst, minlength=len(st))
-    return dict(stations=len(st), fire_features=det is not None, edges=int(len(src)), isolated_self_loop_only=isolated, max_km=MAX_KM[region],
+    return dict(graph_stats(region, len(st), src, dst, dist), fire_features=det is not None)
+
+
+def graph_stats(region, n, src, dst, dist):
+    """Summary of a station graph for results/graph.json."""
+    src, dst, dist = np.asarray(src), np.asarray(dst), np.asarray(dist, dtype=np.float64)
+    deg = np.bincount(dst, minlength=n)
+    return dict(stations=n, edges=int(len(src)), isolated_self_loop_only=int(n - len(np.unique(dst))), max_km=MAX_KM[region],
                 k=K_NEIGHBOURS, mean_in_degree=float(deg.mean()), median_edge_km=float(np.median(dist)),
                 mean_edge_km=float(dist.mean()), share_nodes_full_degree=float((deg == K_NEIGHBOURS).mean()),
-                median_nearest_km=float(np.median([dist[dst == i].min() for i in range(len(st)) if (dst == i).any()])))
+                median_nearest_km=float(np.median([dist[dst == i].min() for i in range(n) if (dst == i).any()])))
 
 
 _cache = {}
