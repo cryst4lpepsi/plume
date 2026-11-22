@@ -59,8 +59,13 @@ export function Delta({ v, digits = 1, unit }: { v: number; digits?: number; uni
   )
 }
 
+// formatters are built once: toLocaleString builds a new one on every call, which adds up at replay speed
+const DATE_LONG = new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })
+export const DAY_MONTH = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' })
+export const MONTH = new Intl.DateTimeFormat('en', { month: 'short', timeZone: 'UTC' })
+
 export const utc = (d: Date, withDate = true) => {
   const hh = String(d.getUTCHours()).padStart(2, '0')
   if (!withDate) return `${hh}:00`
-  return `${d.toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}, ${hh}:00 UTC`
+  return `${DATE_LONG.format(d)}, ${hh}:00 UTC`
 }

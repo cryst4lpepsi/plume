@@ -147,11 +147,14 @@ export function lastObs(d: RegionData, hour: number, s: number): number {
 
 export const hourToDate = (d: RegionIndex, hour: number) => new Date(Date.parse(d.t0 + 'Z') + hour * 3600e3)
 
-export function median(xs: number[]): number {
-  const a = xs.filter((x) => Number.isFinite(x)).sort((p, q) => p - q)
-  if (!a.length) return NaN
-  const m = a.length >> 1
-  return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2
+export function median(xs: ArrayLike<number>): number {
+  // a typed array sorts numerically without a comparator, several times faster on the timeline's thousands of calls
+  const a = new Float64Array(xs.length)
+  let n = 0
+  for (let i = 0; i < xs.length; i++) if (Number.isFinite(xs[i])) a[n++] = xs[i]
+  if (!n) return NaN
+  const b = a.subarray(0, n).sort(), m = n >> 1
+  return n % 2 ? b[m] : (b[m - 1] + b[m]) / 2
 }
 
 /** Stations feeding `s` in the graph, with the model's edge weight at issue o, strongest first. */

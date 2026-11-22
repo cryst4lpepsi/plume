@@ -13,10 +13,7 @@ import { StationDetail } from '../ui/Drawer'
 import { Timeline } from '../ui/Timeline'
 import { norm, searchStations, useStationIndex } from '../ui/Search'
 import { Wordmark } from '../ui/Loader'
-import mainResults from '@results/main.json'
-
-type Scores = Record<string, { mae: number[]; rmse: number[]; skill: number[]; mae_sd?: number[] }>
-const RES = mainResults as unknown as Record<RegionKey, { chosen: string; test: Scores }> & { commit: string }
+import { COMMIT, INDIA_STATIONS, SCORE_NAME, testScores, winterScores, type Scores } from '../lib/scores'
 const MODEL_ROWS: [string, string][] = [['plume', 'Plume graph model'], ['lightgbm', 'LightGBM, no graph'], ['persistence', 'Persistence'], ['seasonal_naive', 'Same hour yesterday'], ['cams', 'CAMS via Open-Meteo']]
 const PANELS = ['watch', 'movers', 'alerts', 'score', 'compare', 'detail'] as const
 type PanelKey = (typeof PANELS)[number]
@@ -216,6 +213,11 @@ export default function TerminalView() {
   const upF = [...validF].sort((a, b) => b.dF - a.dF).slice(0, 4), dnF = [...validF].sort((a, b) => a.dF - b.dF).slice(0, 4)
   const ticker = rowsAll.filter((r) => r.major && Number.isFinite(r.now))
   const date = hourToDate(ds.europe, hour)
+  // the India view scores the Indian stations on their own, in the main test and the winter test
+  const indiaWinter = winterScores('india')
+  const scoreCols: { key: string; label: string; t: Scores }[] = region === 'india'
+    ? [{ key: 'india', label: SCORE_NAME.india, t: testScores('india') }, ...(indiaWinter ? [{ key: 'india-w', label: 'India, winter', t: indiaWinter }] : [])]
+    : REGIONS.map((r) => ({ key: r, label: SCORE_NAME[r], t: testScores(r) }))
   const issue = hourToDate(ds.europe, originHour(ds.europe, originIndex(ds.europe, hour)))
   useEffect(() => { if (!getState().sel) { const d = rowsAll.find((r) => r.region === 'asia' && r.major) ?? rowsAll[0]; if (d) pick(d) } }, []) // eslint-disable-line
   const moverTable = (title: string, list: CityRow[], key: 'd6' | 'dF') => (
@@ -288,13 +290,13 @@ export default function TerminalView() {
         </Panel>
         <Panel id="score" title="Scoreboard" aside={`test period · MAE µg/m³ at +${horizon} h · skill vs persistence`}>
           <table className="tt score">
-            <thead><tr><th scope="col">Model</th>{REGIONS.map((r) => <th key={r} scope="colgroup" colSpan={2}>{r === 'europe' ? 'Europe' : 'Asia'}</th>)}</tr></thead>
+            <thead><tr><th scope="col">Model</th>{scoreCols.map((c) => <th key={c.key} scope="colgroup" colSpan={2}>{c.label}</th>)}</tr></thead>
             <tbody>
               {MODEL_ROWS.map(([k, name]) => (
                 <tr key={k} className={k === 'plume' ? 'ours' : ''}>
                   <th scope="row">{name}</th>
-                  {REGIONS.map((r) => {
-                    const t = RES[r].test, m = t[k]
+                  {scoreCols.map(({ key: r, t }) => {
+                    const m = t[k]
                     if (!m) return [<td key={r}>–</td>, <td key={r + 's'} />]
                     const best = MODEL_ROWS.map(([j]) => t[j]?.mae[horizon - 1] ?? Infinity)
                     const win = m.mae[horizon - 1] === Math.min(...best)
@@ -307,7 +309,7 @@ export default function TerminalView() {
               ))}
             </tbody>
           </table>
-          <p className="foot">Read from results/main.json (commit {RES.commit}). CAMS is a stitched short-lead series, not a true {horizon} h forecast, and its grid is 0.1° in Europe but 0.4° in Asia.</p>
+          <p className="foot">Read from results/main.json (commit {COMMIT}).{region === 'india' && ` India is the ${INDIA_STATIONS} Indian stations of the Asia model, scored on their own (results/slices.json); winter is the separate December to February test.`} CAMS is a stitched short-lead series, not a true {horizon} h forecast, and its grid is 0.1° in Europe but 0.4° in Asia.</p>
         </Panel>
         <Panel id="compare" title="Region compare" aside="now, observed">
           <table className="tt compare">
@@ -321,7 +323,7 @@ export default function TerminalView() {
                   <tr><th scope="row">Stations above WHO 15</th>{REGIONS.map((r) => <td key={r}><Val v={s[r].shareAbove * 100} /> %</td>)}</tr>
                   <tr><th scope="row">Stations reporting</th>{REGIONS.map((r) => <td key={r}>{s[r].reporting} / {ds[r].n}</td>)}</tr>
                   <tr><th scope="row">Forecast error now, +{horizon} h, µg/m³</th>{REGIONS.map((r) => <td key={r}><Val v={live(r)} d={2} /></td>)}</tr>
-                  <tr><th scope="row">Test-period MAE, +{horizon} h, µg/m³</th>{REGIONS.map((r) => <td key={r}>{RES[r].test.plume?.mae[horizon - 1].toFixed(2) ?? '–'}</td>)}</tr>
+                  <tr><th scope="row">Test-period MAE, +{horizon} h, µg/m³</th>{REGIONS.map((r) => <td key={r}>{testScores(r).plume?.mae[horizon - 1].toFixed(2) ?? '–'}</td>)}</tr>
                   <tr><th scope="row">Graph edges</th>{REGIONS.map((r) => <td key={r}>{ds[r].edges.length.toLocaleString('en-GB')}</td>)}</tr>
                 </>)
               })()}

@@ -2,12 +2,31 @@ import { useMemo, useRef } from 'react'
 import { scaleLinear } from 'd3-scale'
 import { line, area } from 'd3-shape'
 import { useData } from '../App'
-import { REGIONS, hourToDate, median, obsAt, originIndex, originHour, fcAt } from '../lib/data'
-import { clockRange, inView, stationInView } from '../lib/derive'
-import { setState, useStore, useHour } from '../lib/store'
+import { REGIONS, hourToDate, median, obsAt, originIndex, originHour, fcAt, type RegionKey } from '../lib/data'
+import { clockRange, inView, stationInView, type DataSet } from '../lib/derive'
+import { setState, useStore, useHour, type RegionView } from '../lib/store'
 import { useSize } from '../lib/useSize'
-import { IconPause, IconPlay, utc } from './bits'
+import { DAY_MONTH, IconPause, IconPlay, utc } from './bits'
 import { WHO_24H } from '../lib/pm'
+
+// The observed median for every replay hour is the slow part (hours x stations), and both views mount a timeline.
+// It depends only on the data and the region view, so it is computed once per pair and kept.
+const seriesCache = new WeakMap<DataSet, Map<RegionView, [number, number][]>>()
+function medianSeries(ds: DataSet, view: RegionView, min: number, max: number) {
+  let byView = seriesCache.get(ds)
+  if (!byView) seriesCache.set(ds, (byView = new Map()))
+  const hit = byView.get(view)
+  if (hit) return hit
+  const cols: [RegionKey, number][] = []
+  for (const r of REGIONS) if (inView(view, r)) for (let s = 0; s < ds[r].n; s++) if (stationInView(view, ds[r], s)) cols.push([r, s])
+  const out: [number, number][] = [], v = new Float64Array(cols.length)
+  for (let t = min - 24; t <= max + 24; t++) {
+    for (let i = 0; i < cols.length; i++) v[i] = obsAt(ds[cols[i][0]], t, cols[i][1])
+    out.push([t, median(v)])
+  }
+  byView.set(view, out)
+  return out
+}
 
 /** Full-width scrubber: station-median PM2.5 across the replay, solid behind "now", forecast band ahead of it. */
 export function Timeline({ compact }: { compact?: boolean }) {
@@ -18,15 +37,7 @@ export function Timeline({ compact }: { compact?: boolean }) {
   const [ref, { w }] = useSize<HTMLDivElement>()
   const h = compact ? 44 : 64
   const { min, max } = clockRange(ds)
-  const series = useMemo(() => {
-    const out: [number, number][] = []
-    for (let t = min - 24; t <= max + 24; t++) {
-      const v: number[] = []
-      for (const r of REGIONS) if (inView(view, r)) for (let s = 0; s < ds[r].n; s++) if (stationInView(view, ds[r], s)) v.push(obsAt(ds[r], t, s))
-      out.push([t, median(v)])
-    }
-    return out
-  }, [ds, view, min, max])
+  const series = useMemo(() => medianSeries(ds, view, min, max), [ds, view, min, max])
   const o = originIndex(ds.europe, hour)
   const band = useMemo(() => {
     const out: { t: number; p10: number; p50: number; p90: number }[] = []
@@ -53,8 +64,11 @@ export function Timeline({ compact }: { compact?: boolean }) {
   }
   const date = hourToDate(ds.europe, hour)
   // month/day ticks
-  const ticks: number[] = []
-  for (let t = min; t <= max; t++) { const d = hourToDate(ds.europe, t); if (d.getUTCHours() === 0 && (d.getUTCDate() === 1 || d.getUTCDate() === 15)) ticks.push(t) }
+  const ticks = useMemo(() => {
+    const out: number[] = []
+    for (let t = min; t <= max; t++) { const d = hourToDate(ds.europe, t); if (d.getUTCHours() === 0 && (d.getUTCDate() === 1 || d.getUTCDate() === 15)) out.push(t) }
+    return out
+  }, [ds, min, max])
   return (
     <section className={`timeline${compact ? ' compact' : ''}`} aria-label="Replay timeline">
       <div className="tl-head">
@@ -86,7 +100,7 @@ export function Timeline({ compact }: { compact?: boolean }) {
             {ticks.map((t) => (
               <g key={t}>
                 <line x1={x(t)} x2={x(t)} y1={h - 2} y2={h + 2} className="tl-tick" />
-                <text x={x(t) + 3} y={h + 12} className="tick">{hourToDate(ds.europe, t).toLocaleString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' })}</text>
+                <text x={x(t) + 3} y={h + 12} className="tick">{DAY_MONTH.format(hourToDate(ds.europe, t))}</text>
               </g>
             ))}
             <path d={ln(future) ?? ''} className="tl-future" />

@@ -4,6 +4,7 @@ import { line, area, curveMonotoneX } from 'd3-shape'
 import { type RegionData, obsAt, originIndex, originHour, fcAt, lgbAt, lastObs, hourToDate } from '../lib/data'
 import { useStore, setState } from '../lib/store'
 import { WHO_24H } from '../lib/pm'
+import { MONTH } from '../ui/bits'
 
 const PAST = 48
 interface Props { d: RegionData; s: number; hour: number; width: number; height: number; dense?: boolean }
@@ -40,7 +41,7 @@ export function StationChart({ d, s, hour, width, height, dense }: Props) {
   const p50 = line<{ h: number; p50: number }>().x((p) => x(p.h)).y((p) => y(p.p50)).curve(curveMonotoneX)
   const ticksX: number[] = []
   for (let h = Math.ceil((hour - PAST) / 12) * 12; h <= model.oh + d.horizons; h += 12) ticksX.push(h)
-  const fmtTick = (h: number) => { const t = hourToDate(d, h); return t.getUTCHours() === 0 ? `${t.getUTCDate()} ${t.toLocaleString('en', { month: 'short', timeZone: 'UTC' })}` : `${String(t.getUTCHours()).padStart(2, '0')}:00` }
+  const fmtTick = (h: number) => { const t = hourToDate(d, h); return t.getUTCHours() === 0 ? `${t.getUTCDate()} ${MONTH.format(t)}` : `${String(t.getUTCHours()).padStart(2, '0')}:00` }
   const keys = ['persistence', 'seasonal', 'lightgbm', 'cams'] as const
   const names = { persistence: 'Persistence', seasonal: 'Same hour yesterday', lightgbm: 'LightGBM', cams: 'CAMS' }
   const dash = { persistence: '1 3', seasonal: '5 3', lightgbm: '2 2', cams: '8 3 1 3' }

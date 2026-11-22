@@ -6,6 +6,7 @@ import { type RegionKey } from '../lib/data'
 import { stationValue } from '../lib/derive'
 import { setState, useStore, useHour, type Mode, type RegionView } from '../lib/store'
 import { fmt } from '../lib/pm'
+import { SCORE_NAME, scoreKeys, testScores, winterScores } from '../lib/scores'
 import { LensNav, Segmented } from '../ui/bits'
 import { Timeline } from '../ui/Timeline'
 import { Legend } from '../ui/Legend'
@@ -25,6 +26,25 @@ const MODE_NOTE: Record<Mode, (h: number) => string> = {
   forecast: (h) => `Median (P50) forecast for ${h} h after the replay time, from the latest 6-hourly issue.`,
   error: (h) => `Absolute error of the P50 forecast issued at least ${h} h earlier, against what was then measured.`,
   influence: () => 'Arcs show the graph edges the model weights most for this issue; they brighten toward the receiving station.',
+}
+
+/** What the error layer adds up to over the whole test period, for the stations in view. */
+function ErrorScores({ region, horizon }: { region: RegionView; horizon: number }) {
+  const h = horizon - 1
+  return (
+    <p className="g-note g-scores">
+      Test-period mean error at {horizon} h:{' '}
+      {scoreKeys(region).map((k, i) => {
+        const t = testScores(k), w = winterScores(k)
+        return (
+          <span key={k}>
+            {i > 0 && '; '}{SCORE_NAME[k]} <strong className="num">{t.plume.mae[h].toFixed(2)}</strong> µg/m³ (LightGBM {t.lightgbm.mae[h].toFixed(2)}, persistence {t.persistence.mae[h].toFixed(2)})
+            {region !== 'both' && w?.plume && <>, winter <span className="num">{w.plume.mae[h].toFixed(2)}</span> (LightGBM {w.lightgbm.mae[h].toFixed(2)})</>}
+          </span>
+        )
+      })}.
+    </p>
+  )
 }
 
 export function GlobeView() {
@@ -54,6 +74,7 @@ export function GlobeView() {
           </label>
         )}
         <p className="g-note">{MODE_NOTE[mode](horizon)}</p>
+        {mode === 'error' && <ErrorScores region={region} horizon={horizon} />}
         <StationSearch />
       </div>
       <Legend />
