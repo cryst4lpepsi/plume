@@ -41,7 +41,7 @@ export function HorizonChart({ series, yLabel, height = 260, yDomain, refLine, f
           ))}
           {series.map((s) => <path key={s.name} d={ln(s.values) ?? ''} className={`hline ${s.cls}`} strokeDasharray={s.dash} />)}
           </g>
-          {series.map((s, i) => <text key={s.name} x={w - m.r + 8} y={endY.get(i)} dy="0.32em" className={`end-label ${s.cls}`}>{s.name}</text>)}
+          {series.map((s, i) => <text key={s.name} x={w - m.r + 8} y={endY.get(i)} dy="0.32em" className={`end-label ${s.cls}`}>{narrow ? s.name.replace(/ via Open-Meteo$| graph model$/, '') : s.name}</text>)}
         </svg>
       )}
     </div>

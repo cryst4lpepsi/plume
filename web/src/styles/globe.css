@@ -15,11 +15,16 @@
 .g-note { font-size: var(--t--1); color: var(--fg-2); text-align: right; max-width: 40ch; line-height: 1.45; text-wrap: pretty; }
 .g-horizon { display: flex; align-items: center; gap: var(--s-3); font-size: var(--t--1); color: var(--fg-2); }
 .g-horizon output { min-width: 4ch; text-align: right; color: var(--fg); }
-input[type='range'] { appearance: none; height: 16px; background: transparent; width: 150px; }
-input[type='range']::-webkit-slider-runnable-track { height: 1px; background: var(--fg-3); }
-input[type='range']::-moz-range-track { height: 1px; background: var(--fg-3); }
-input[type='range']::-webkit-slider-thumb { appearance: none; width: 9px; height: 15px; margin-top: -7px; background: var(--accent); border: 0; border-radius: 1px; }
-input[type='range']::-moz-range-thumb { width: 9px; height: 15px; background: var(--accent); border: 0; border-radius: 1px; }
+input[type='range'] { appearance: none; height: 20px; background: transparent; width: 150px; cursor: pointer; --fill: 50%; }
+input[type='range']::-webkit-slider-runnable-track { height: 2px; background: linear-gradient(to right, var(--accent) var(--fill), var(--rule) var(--fill)); }
+input[type='range']::-moz-range-track { height: 2px; background: var(--rule); }
+input[type='range']::-moz-range-progress { height: 2px; background: var(--accent); }
+input[type='range']::-webkit-slider-thumb { appearance: none; width: 10px; height: 16px; margin-top: -7px; background: var(--accent); border: 0; border-radius: 1px; transition: transform var(--dur-1) var(--ease-out); }
+input[type='range']::-moz-range-thumb { width: 10px; height: 16px; background: var(--accent); border: 0; border-radius: 1px; }
+input[type='range']:hover::-webkit-slider-thumb { transform: scaleY(1.15); }
+input[type='range']:focus-visible { outline: none; }
+input[type='range']:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 2px var(--ink-0), 0 0 0 4px var(--accent); }
+input[type='range']:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 2px var(--ink-0), 0 0 0 4px var(--accent); }
 
 /* search */
 .search { position: relative; width: 260px; }

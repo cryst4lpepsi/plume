@@ -144,6 +144,8 @@
   .p-globe { display: none; }
   .term-status div:first-child { display: none; }
   .detail.dense .detail-facts { grid-template-columns: 1fr; gap: 8px; }
+  .watch .range, .watch th:nth-child(6) { display: none; }
+  .a-what strong { display: inline-block; max-width: calc(100% - 3ch); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }
 }
 @media (max-width: 760px) {
   .term { height: auto; min-height: 100dvh; overflow: visible; display: block; padding-bottom: 96px; }

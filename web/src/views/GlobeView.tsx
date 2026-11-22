@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useState, type CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 import { useData } from '../App'
 import { Globe } from '../globe/Globe'
@@ -49,7 +49,7 @@ export function GlobeView() {
         {(mode === 'forecast' || mode === 'error') && (
           <label className="g-horizon">
             <span>{mode === 'forecast' ? 'Hours ahead' : 'Forecast age'}</span>
-            <input type="range" min={1} max={24} value={horizon} onChange={(e) => setState({ horizon: Number(e.target.value) })} />
+            <input type="range" min={1} max={24} value={horizon} style={{ '--fill': `${((horizon - 1) / 23) * 100}%` } as CSSProperties} onChange={(e) => setState({ horizon: Number(e.target.value) })} />
             <output className="num">{horizon} h</output>
           </label>
         )}

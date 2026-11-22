@@ -98,6 +98,9 @@ export default function App() {
   const [barFull, setBarFull] = useState(false)
   const [warm, setWarm] = useState(false)
   const [entered, setEntered] = useState(false)
+  // later visits show no loader, but a slow connection still needs a visible state and an explanation
+  const [slow, setSlow] = useState(false)
+  useEffect(() => { const t = setTimeout(() => setSlow(true), 8000); return () => clearTimeout(t) }, [])
   const [first] = useState(() => !seenBefore())
   const booting = !(warm && (barFull || !first))
   const intro: Intro = booting ? 'boot' : entered ? 'done' : first ? 'fly' : 'letters'
@@ -127,9 +130,9 @@ export default function App() {
             </DataCtx.Provider>
           </div>
         )}
-        {booting && (first || err) && (
+        {booting && (first || err || slow) && (
           // the bar stops short of the end until the view has settled, so it never sits full while nothing happens
-          <Loader progress={warm ? 1 : Math.min(progress, 0.96)} error={err} onDone={() => setBarFull(true)} />
+          <Loader progress={warm ? 1 : Math.min(progress, 0.96)} error={err} slow={slow} onDone={() => setBarFull(true)} />
         )}
       </IntroCtx.Provider>
     </MotionConfig>

@@ -3,6 +3,7 @@ html { background: var(--ink-0); color: var(--fg); font-family: var(--font-text)
 body { margin: 0; min-height: 100dvh; }
 #root { min-height: 100dvh; }
 ::selection { background: var(--accent); color: var(--accent-ink); }
+input, textarea { caret-color: var(--accent); }
 h1, h2, h3, p, ol, ul, dl, dd, figure { margin: 0; }
 ol, ul { padding: 0; list-style: none; }
 a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--fg-3); text-underline-offset: 0.2em; text-decoration-thickness: 1px; }
@@ -26,16 +27,22 @@ button { cursor: pointer; }
 
 /* lens switch */
 .lens { display: flex; gap: var(--s-5); font-size: var(--t--1); letter-spacing: 0.04em; }
-.lens a { color: var(--fg-2); text-decoration: none; padding: 2px 0; border-bottom: 1px solid transparent; transition: color var(--dur-1) var(--ease-out); }
+.lens a { position: relative; color: var(--fg-2); text-decoration: none; padding: 2px 0; transition: color var(--dur-1) var(--ease-out); }
+.lens a::after { content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 1px; background: currentColor; transform: scaleX(0); transform-origin: left; transition: transform var(--dur-2) var(--ease-out); }
 .lens a:hover { color: var(--fg); }
-.lens a.active { color: var(--accent); border-bottom-color: var(--accent); }
+.lens a:hover::after { transform: scaleX(1); opacity: 0.5; }
+.lens a.active { color: var(--accent); }
+.lens a.active::after { transform: scaleX(1); opacity: 1; }
 
 /* segmented control: hairline frame, filled selection, square corners */
 .seg { display: inline-flex; border: 1px solid var(--rule); border-radius: var(--r-1); background: var(--ink-0); }
-.seg button { background: none; border: 0; padding: 6px 12px; font-size: var(--t--1); color: var(--fg-2); line-height: 1.3; transition: background var(--dur-1) var(--ease-out), color var(--dur-1) var(--ease-out); }
+.seg button { position: relative; isolation: isolate; background: none; border: 0; padding: 6px 12px; font-size: var(--t--1); color: var(--fg-2); line-height: 1.3; transition: background var(--dur-1) var(--ease-out), color var(--dur-1) var(--ease-out); }
 .seg button + button { border-left: 1px solid var(--rule); }
 .seg button:hover { color: var(--fg); background: var(--ink-2); }
-.seg button[aria-checked='true'] { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.seg button[aria-checked='true'] { color: var(--accent-ink); font-weight: 600; }
+.seg button[aria-checked='true']:hover { background: none; }
+.seg-thumb { position: absolute; inset: -1px; z-index: -1; background: var(--accent); border-radius: var(--r-1); }
+.seg-label { position: relative; }
 
 /* signed deltas */
 .delta { display: inline-flex; align-items: center; gap: 3px; font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-stretch: var(--mono-stretch); }
@@ -49,6 +56,8 @@ button { cursor: pointer; }
 .grid { stroke: var(--rule-soft); stroke-width: 1; }
 .who { stroke: var(--pm-2); stroke-width: 1; stroke-dasharray: 2 4; opacity: 0.8; }
 .who-label { fill: var(--pm-2); }
+/* chart labels sit on the plot, so they carry a halo of the panel colour to stay legible over lines */
+.who-label, .now-label { paint-order: stroke; stroke: var(--ink-0); stroke-width: 4px; stroke-linejoin: round; }
 .obs { fill: none; stroke: var(--fg); stroke-width: 1.5; stroke-linejoin: round; }
 .later { fill: none; stroke: var(--fg-3); stroke-width: 1; stroke-dasharray: 1 3; stroke-linecap: round; }
 .p50 { fill: none; stroke: var(--pm-1); stroke-width: 1.5; }
@@ -79,7 +88,11 @@ button { cursor: pointer; }
 .loader h1 { font-family: var(--font-display); font-weight: var(--display-weight, 500); font-stretch: var(--display-stretch, 100%); font-size: calc(var(--t-5) * 1.6); line-height: 0.95; letter-spacing: -0.02em; font-variation-settings: 'opsz' 72; }
 .loader-bar { width: 132px; height: 2px; background: var(--ink-2); border-radius: 1px; overflow: hidden; }
 .loader-bar span { display: block; height: 100%; background: var(--accent); transform-origin: left center; }
-.loader-err { color: var(--fg-2); max-width: 46ch; text-align: center; }
+.loader-err { color: var(--fg-2); max-width: 46ch; text-align: center; display: grid; justify-items: center; gap: var(--s-4); }
+.loader-retry { background: none; border: 1px solid var(--rule); border-radius: var(--r-1); color: var(--fg); padding: 6px 14px; font-size: var(--t--1); transition: background var(--dur-1) var(--ease-out), border-color var(--dur-1) var(--ease-out); }
+.loader-retry:hover { background: var(--ink-2); border-color: var(--fg-3); }
+/* reserves its line so the bar does not move when the note appears */
+.loader-note { min-height: 3em; max-width: 34ch; text-align: center; font-size: var(--t--1); line-height: 1.5; color: var(--fg-3); }
 @keyframes enter-fade { from { opacity: 0; } }
 [data-enter] main > :not(:has(.plume-word)),
 [data-enter] main > :has(.plume-word) > :not(:has(.plume-word)):not(.plume-word),

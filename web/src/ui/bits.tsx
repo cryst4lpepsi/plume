@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom'
-import type { ReactNode } from 'react'
+import { useId, type ReactNode } from 'react'
+import { motion } from 'framer-motion'
 
 /** Persistent lens switch. State lives in the store, so station, region and time carry across. */
 export function LensNav() {
@@ -12,7 +13,11 @@ export function LensNav() {
   )
 }
 
+// the selection is one element that slides to the chosen option (short, critically damped: state, not decoration)
+const SLIDE = { type: 'spring', stiffness: 520, damping: 42, mass: 0.6 } as const
+
 export function Segmented<T extends string>({ label, value, options, onChange }: { label: string; value: T; options: { value: T; label: string; title?: string }[]; onChange: (v: T) => void }) {
+  const id = useId()
   return (
     <div className="seg" role="radiogroup" aria-label={label}>
       {options.map((o) => (
@@ -23,7 +28,8 @@ export function Segmented<T extends string>({ label, value, options, onChange }:
             if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); onChange(options[(i + 1) % options.length].value); (e.currentTarget.nextElementSibling as HTMLElement ?? e.currentTarget.parentElement!.firstElementChild as HTMLElement).focus() }
             if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); onChange(options[(i - 1 + options.length) % options.length].value); (e.currentTarget.previousElementSibling as HTMLElement ?? e.currentTarget.parentElement!.lastElementChild as HTMLElement).focus() }
           }}>
-          {o.label}
+          {o.value === value && <motion.span className="seg-thumb" layoutId={`seg-${id}`} transition={SLIDE} aria-hidden="true" />}
+          <span className="seg-label">{o.label}</span>
         </button>
       ))}
     </div>

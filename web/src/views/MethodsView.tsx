@@ -106,7 +106,7 @@ export default function MethodsView() {
       <article>
         <header className="m-head">
           <h1>How Plume works, and how well</h1>
-          <p className="standfirst">A small graph network forecasts PM2.5 a day ahead at {G.europe.stations + G.asia.stations} monitoring stations. This page says what it was trained on, what it was compared with, and where it loses.</p>
+          <p className="standfirst">A small graph network forecasts PM2.5 a day ahead at {n0(G.europe.stations + G.asia.stations)} monitoring stations. This page says what it was trained on, what it was compared with, and where it loses.</p>
           <p className="m-meta">Every figure below is read from <code>results/*.json</code>, written by scripts in the repository at commit <code>{R.commit}</code>. <code>make eval</code> regenerates them.</p>
         </header>
 

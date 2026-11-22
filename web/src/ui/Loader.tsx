@@ -29,8 +29,9 @@ export function Wordmark() {
   return <span className="plume-word">Plume</span>
 }
 
-/** progress 0..1; onDone runs once the bar has visibly reached the end. */
-export function Loader({ progress, error, onDone }: { progress: number; error: string | null; onDone: () => void }) {
+/** progress 0..1; onDone runs once the bar has visibly reached the end. `slow`: loading has taken long enough
+ * that the visitor should be told why. */
+export function Loader({ progress, error, slow, onDone }: { progress: number; error: string | null; slow: boolean; onDone: () => void }) {
   const bar = useSpring(0, { stiffness: 70, damping: 20, restDelta: 0.001 })
   const fired = useRef(false), track = useRef<HTMLDivElement>(null)
   useEffect(() => { bar.set(progress) }, [bar, progress])
@@ -42,10 +43,18 @@ export function Loader({ progress, error, onDone }: { progress: number; error: s
     <main className="loader" aria-busy={!error}>
       <motion.div className="loader-inner" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: EASE }}>
         <h1><motion.span layoutId={WORD_ID} className="plume-word" transition={FLY}>Plume</motion.span></h1>
-        {error ? <p role="alert" className="loader-err">{error}</p> : (
-          <div ref={track} className="loader-bar" role="progressbar" aria-label="Loading the replay" aria-valuemin={0} aria-valuemax={100} aria-valuenow={0}>
-            <motion.span style={{ scaleX: bar }} />
+        {error ? (
+          <div className="loader-err" role="alert">
+            <p>{error}</p>
+            <button type="button" className="loader-retry" onClick={() => location.reload()}>Try again</button>
           </div>
+        ) : (
+          <>
+            <div ref={track} className="loader-bar" role="progressbar" aria-label="Loading the replay" aria-valuemin={0} aria-valuemax={100} aria-valuenow={0}>
+              <motion.span style={{ scaleX: bar }} />
+            </div>
+            <p className="loader-note" aria-live="polite">{slow ? 'Still loading. The replay is about 60 MB, so a slow connection can take a minute or two.' : ''}</p>
+          </>
         )}
       </motion.div>
     </main>
